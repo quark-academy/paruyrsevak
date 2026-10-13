@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Poem;
+use App\Support\Query;
 use App\Support\Seo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class RandomPoemController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $exclude = trim((string) $request->query('exclude', ''));
+        $exclude = Query::string($request, 'exclude');
 
         $poem = Poem::query()
             ->when($exclude !== '', fn ($query) => $query->where('slug', '!=', $exclude))

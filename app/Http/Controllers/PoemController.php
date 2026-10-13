@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Poem;
 use App\Models\PoemWord;
+use App\Support\Query;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,9 +16,9 @@ class PoemController extends Controller
      */
     public function index(Request $request): View
     {
-        $term = trim((string) $request->query('q', ''));
-        $source = (string) $request->query('source', '');
-        $sort = (string) $request->query('sort', 'new');
+        $term = Query::string($request, 'q');
+        $source = Query::string($request, 'source');
+        $sort = Query::string($request, 'sort', 'new');
 
         $source = in_array($source, ['original', 'ai'], true) ? $source : '';
         $sort = in_array($sort, ['new', 'popular'], true) ? $sort : 'new';

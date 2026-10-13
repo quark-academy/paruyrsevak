@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PoemRequest;
 use App\Models\Poem;
 use App\Services\ElevenLabsService;
+use App\Support\Query;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class PoemController extends Controller
 
     public function index(Request $request): View
     {
-        $term = trim((string) $request->query('q', ''));
+        $term = Query::string($request, 'q');
 
         $poems = Poem::query()
             ->when($term !== '', function ($query) use ($term): void {

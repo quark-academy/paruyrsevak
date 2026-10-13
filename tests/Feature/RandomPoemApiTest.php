@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Poem;
+use App\Services\PoemPlayerPayload;
 use App\Support\Seo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,5 +59,30 @@ class RandomPoemApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('randomUrl', route('api.poems.random'))
             ->assertJsonPath('prefs.autoplay', (bool) config('poems.player.autoplay'));
+    }
+
+    public function test_a_malformed_exclude_parameter_does_not_break_shuffling(): void
+    {
+        $poem = Poem::factory()->create(['slug' => 'stable-poem']);
+
+        // "?exclude[]=x" must not blow up with an array-to-string error.
+        $this->getJson('/api/poems/random?exclude[]=x')
+            ->assertOk()
+            ->assertJsonPath('slug', $poem->slug);
+    }
+
+    public function test_the_payload_is_safe_for_a_poem_that_is_not_stored_yet(): void
+    {
+        $poem = new Poem(['title' => 'Նոր գործ', 'content' => 'Մեկ երկու']);
+
+        $payload = app(PoemPlayerPayload::class)->build($poem);
+
+        // Comparing an operator with a null key used to throw
+        // "Illegal operator and value combination".
+        $this->assertNull($payload['prev']);
+        $this->assertNull($payload['next']);
+        $this->assertNull($payload['playerUrl']);
+        $this->assertNull($payload['playsUrl']);
+        $this->assertSame(route('home'), $payload['readingUrl']);
     }
 }

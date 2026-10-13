@@ -118,9 +118,18 @@ class PoemPlayerPayload
      */
     protected function neighbour(Poem $poem, bool $previous): ?array
     {
+        $key = $poem->getKey();
+
+        // A poem that is not stored yet (e.g. a form preview) has no
+        // neighbours: comparing an operator against a null value throws
+        // "Illegal operator and value combination" in the query builder.
+        if ($key === null) {
+            return null;
+        }
+
         $query = Poem::query()
             ->select(['id', 'slug', 'title'])
-            ->where('id', $previous ? '<' : '>', $poem->getKey())
+            ->where('id', $previous ? '<' : '>', $key)
             ->orderBy('id', $previous ? 'desc' : 'asc');
 
         $neighbour = $query->first();

@@ -121,4 +121,18 @@ class PublicPoemPageTest extends TestCase
             ->assertOk()
             ->assertDontSee('Ամենաշատ լսվածը');
     }
+
+    public function test_malformed_query_strings_do_not_break_the_catalogue(): void
+    {
+        $poem = Poem::factory()->create(['title' => 'Կայուն գործ']);
+
+        // Bots (and careless links) send array parameters: they must behave
+        // like an empty filter instead of returning a 500 page.
+        $this->get('/?q[]=a')->assertOk();
+        $this->get('/?source[]=original&sort[]=popular')->assertOk();
+        $this->get('/?page[]=2')->assertOk();
+        $this->get('/?q='.urlencode('Կայուն').'&source[]=x')
+            ->assertOk()
+            ->assertSee($poem->title);
+    }
 }
