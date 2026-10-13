@@ -52,10 +52,11 @@
                         </div>
                     </div>
                     <select id="speed" class="rounded-lg border border-stone-700 bg-stone-800 px-2 py-1 text-xs">
-                        <option value="0.75">0.75×</option>
-                        <option value="1" selected>1×</option>
-                        <option value="1.25">1.25×</option>
+                        <option value="0.8" selected>0.8×</option>
+                        <option value="1">1×</option>
+                        <option value="1.2">1.2×</option>
                         <option value="1.5">1.5×</option>
+                        <option value="0.75">0.75×</option>
                     </select>
                 </div>
             </div>
@@ -86,7 +87,6 @@
             const audio = document.getElementById('poem-audio');
             const toggle = document.getElementById('play-toggle');
             const seek = document.getElementById('seek');
-            const speed = document.getElementById('speed');
             const current = document.getElementById('time-current');
             const total = document.getElementById('time-total');
             const words = Array.from(document.querySelectorAll('[data-word-index]'));
@@ -138,7 +138,6 @@
             seek.addEventListener('input', () => {
                 if (audio.duration > 0) audio.currentTime = (seek.value / 100) * audio.duration;
             });
-            speed.addEventListener('change', () => { audio.playbackRate = parseFloat(speed.value); });
             words.forEach((el) => el.addEventListener('click', () => {
                 audio.currentTime = parseFloat(el.dataset.start || '0');
                 audio.play();
@@ -206,6 +205,15 @@
             if (!audio) return;
 
             audio.loop = mode === 'loop';
+
+            // Speed: the select opens at 0.8× (poetry reads better a touch
+            // slower) and works even when there is no word alignment yet.
+            const speed = document.getElementById('speed');
+
+            if (speed) {
+                audio.playbackRate = parseFloat(speed.value);
+                speed.addEventListener('change', () => { audio.playbackRate = parseFloat(speed.value); });
+            }
 
             if (!autoplay) return;
 

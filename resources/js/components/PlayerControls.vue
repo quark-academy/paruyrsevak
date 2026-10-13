@@ -5,7 +5,7 @@ const props = defineProps({
     playing: { type: Boolean, default: false },
     currentTime: { type: Number, default: 0 },
     duration: { type: Number, default: 0 },
-    rate: { type: Number, default: 1 },
+    rate: { type: Number, default: 0.8 },
     muted: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     /** Autoplay was refused by the browser: ask for a tap by pulsing the play button. */
@@ -14,7 +14,8 @@ const props = defineProps({
 
 const emit = defineEmits(['toggle', 'seek', 'rate', 'mute']);
 
-const RATES = [0.75, 1, 1.25, 1.5];
+/** 0.8× is the opening speed; a tap walks the list and wraps around. */
+const RATES = [0.8, 1, 1.2, 1.5, 0.75];
 
 const ratio = computed(() => (props.duration > 0 ? Math.min(1, props.currentTime / props.duration) : 0));
 

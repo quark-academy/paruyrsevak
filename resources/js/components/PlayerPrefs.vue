@@ -9,7 +9,7 @@ const emit = defineEmits(['autoplay', 'mode']);
 const MODES = [
     { id: 'sequential', label: 'Հերթով', title: 'Հաջորդ բանաստեղծությունը՝ հերթով' },
     { id: 'loop', label: 'Կրկնել', title: 'Կրկնել նույն ձայնագրությունը' },
-    { id: 'shuffle', label: 'Խառնել', title: 'Հաջորդը՝ պատահական կարգով' },
+    { id: 'shuffle', label: 'Պատահական', title: 'Հաջորդը՝ պատահական բանաստեղծություն' },
 ];
 
 const PILL_BASE = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition';

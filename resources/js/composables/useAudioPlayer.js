@@ -16,7 +16,8 @@ export function useAudioPlayer() {
     const error = ref(null);
     const time = ref(0);
     const duration = ref(0);
-    const rate = ref(1);
+    /** Poetry reads better a touch slower: the player always opens at 0.8×. */
+    const rate = ref(0.8);
     const muted = ref(false);
     const loop = ref(false);
     const seeking = ref(false);
@@ -40,6 +41,7 @@ export function useAudioPlayer() {
         el.crossOrigin = 'anonymous';
         el.volume = muted.value ? 0 : 1;
         el.loop = loop.value;
+        el.playbackRate = rate.value;
 
         el.addEventListener('loadedmetadata', () => {
             duration.value = isFinite(el.duration) ? el.duration : 0;
