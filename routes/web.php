@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DiagnosticsController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PoemAudioStreamController;
 use App\Http\Controllers\PoemController;
@@ -15,6 +16,9 @@ Route::get('/poems/{poem}', [PoemController::class, 'show'])->name('poems.show')
 Route::get('/audio/{poem}', PoemAudioStreamController::class)
     ->middleware('throttle:240,1')
     ->name('poems.audio');
+
+// Deployment diagnostics (APP_DEBUG only): shows how the base path was derived.
+Route::get('/__diagnostics', DiagnosticsController::class)->name('diagnostics');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 

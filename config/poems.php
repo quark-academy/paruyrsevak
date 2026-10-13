@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | URL subdirectory (shared hosting)
+    |--------------------------------------------------------------------------
+    |
+    | Set this when the site is served from a folder
+    | (e.g. POEMS_BASE_PATH=/sevak for https://host/sevak). It overrides the
+    | automatic detection, which otherwise reads APP_URL and the front
+    | controller location reported by the web server.
+    |
+    */
+
+    'base_path' => rtrim((string) env('POEMS_BASE_PATH', ''), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Short URLs (Shorts style)
     |--------------------------------------------------------------------------
     |

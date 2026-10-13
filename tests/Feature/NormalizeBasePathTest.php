@@ -182,6 +182,43 @@ class NormalizeBasePathTest extends TestCase
         $this->assertSame('/demo-ashun', $request->getPathInfo());
     }
 
+    public function test_the_project_folder_name_is_used_as_a_last_resort(): void
+    {
+        // Hosting where neither APP_URL nor the reported script location tells
+        // anything: the application folder inside ~/lab.quark.am is exactly the
+        // folder in the URL, so it can be used as a hint.
+        config()->set('app.url', 'https://lab.quark.am');
+        config()->set('poems.base_path', '');
+
+        $folder = basename(base_path());
+
+        $request = Request::create('https://lab.quark.am/'.$folder.'/', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/home/user/lab.quark.am/'.$folder.'/index.php');
+        $request->server->set('DOCUMENT_ROOT', '/nonexistent-docroot');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/'.$folder, $request->getBaseUrl());
+        $this->assertSame('/', $request->getPathInfo());
+    }
+
+    public function test_an_explicit_base_path_setting_wins(): void
+    {
+        config()->set('app.url', 'https://lab.quark.am');
+        config()->set('poems.base_path', '/sevak');
+
+        $request = Request::create('https://lab.quark.am/sevak/', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/home/user/lab.quark.am/sevak/index.php');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/sevak', $request->getBaseUrl());
+        $this->assertSame('/', $request->getPathInfo());
+        $this->assertSame('home', app('router')->getRoutes()->match($request)->getName());
+    }
+
     public function test_unrelated_requests_keep_their_path(): void
     {
         // A root deployment: nothing to normalise at all.

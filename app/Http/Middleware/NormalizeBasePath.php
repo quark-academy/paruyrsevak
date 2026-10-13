@@ -72,17 +72,45 @@ class NormalizeBasePath
     /**
      * Subdirectory the application is served from.
      *
-     * APP_URL wins ("https://host/sevak" -> "/sevak"). When it carries no path
-     * (a forgotten suffix, or a config cache built before the URL was fixed)
-     * the front controller location reported by the web server is used as a
-     * fallback, so a wrong APP_URL degrades to working routing instead of a
-     * home page that opens some poem.
+     * Order of trust: the explicit POEMS_BASE_PATH setting, the path in
+     * APP_URL, the location the web server reports for the front controller and
+     * finally the project folder name (the folder that holds the application is
+     * normally the folder in the URL).
      */
     protected function basePath(Request $request): string
     {
-        $configured = rtrim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+        $configured = rtrim((string) config('poems.base_path', ''), '/');
 
-        return $configured !== '' ? $configured : $this->detectBasePath($request);
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        $fromUrl = rtrim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+
+        if ($fromUrl !== '') {
+            return $fromUrl;
+        }
+
+        $detected = $this->detectBasePath($request);
+
+        return $detected !== '' ? $detected : $this->detectFromProjectFolder($request);
+    }
+
+    /**
+     * Last resort: the URL prefix equals the application folder name
+     * (e.g. ~/lab.quark.am/sevak served as https://host/sevak).
+     */
+    protected function detectFromProjectFolder(Request $request): string
+    {
+        $folder = basename(str_replace('\\', '/', base_path()));
+
+        if ($folder === '' || str_contains($folder, '.')) {
+            return '';
+        }
+
+        $uri = '/'.trim((string) strtok((string) $request->server->get('REQUEST_URI', ''), '?'), '/');
+
+        return ($uri === '/'.$folder || str_starts_with($uri, '/'.$folder.'/')) ? '/'.$folder : '';
     }
 
     /**
