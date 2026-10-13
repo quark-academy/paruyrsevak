@@ -526,8 +526,8 @@ onBeforeUnmount(() => {
             </div>
         </section>
 
-        <!-- vertical navigation rail -->
-        <nav class="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-2">
+        <!-- vertical navigation rail (desktop: on mobile the swipe does this job) -->
+        <nav class="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 sm:flex">
             <button
                 type="button"
                 class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-sm backdrop-blur transition disabled:opacity-25"
