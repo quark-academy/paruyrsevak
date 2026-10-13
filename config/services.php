@@ -68,6 +68,8 @@ return [
         'similarity_boost' => (float) env('ELEVENLABS_SIMILARITY_BOOST', 0.75),
         'style' => (float) env('ELEVENLABS_STYLE', 0.0),
         'use_speaker_boost' => filter_var(env('ELEVENLABS_SPEAKER_BOOST', true), FILTER_VALIDATE_BOOL),
+        // Optional speech rate (0.7 — 1.2). Not sent unless configured.
+        'speed' => env('ELEVENLABS_SPEED'),
         'disk' => env('ELEVENLABS_DISK', 'public'),
         'directory' => env('ELEVENLABS_DIRECTORY', 'ai_audio'),
     ],

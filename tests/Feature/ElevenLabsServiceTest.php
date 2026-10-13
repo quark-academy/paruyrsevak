@@ -111,6 +111,32 @@ class ElevenLabsServiceTest extends TestCase
         Http::assertSent(fn ($request): bool => ($request->data()['language_code'] ?? null) === 'hy');
     }
 
+    public function test_speed_is_not_sent_by_default(): void
+    {
+        config()->set('services.elevenlabs.key', 'test-key');
+        config()->set('services.elevenlabs.voice_id', 'voice-1');
+        config()->set('services.elevenlabs.speed', null);
+
+        Http::fake(['api.elevenlabs.io/*' => Http::response(['audio_base64' => base64_encode('audio')], 200)]);
+
+        app(ElevenLabsService::class)->synthesize('Սևակ');
+
+        Http::assertSent(fn ($request): bool => ! array_key_exists('speed', $request->data()['voice_settings'] ?? []));
+    }
+
+    public function test_speed_is_sent_when_configured(): void
+    {
+        config()->set('services.elevenlabs.key', 'test-key');
+        config()->set('services.elevenlabs.voice_id', 'voice-1');
+        config()->set('services.elevenlabs.speed', '0.9');
+
+        Http::fake(['api.elevenlabs.io/*' => Http::response(['audio_base64' => base64_encode('audio')], 200)]);
+
+        app(ElevenLabsService::class)->synthesize('Սևակ');
+
+        Http::assertSent(fn ($request): bool => ($request->data()['voice_settings']['speed'] ?? null) === 0.9);
+    }
+
     public function test_it_is_not_configured_without_credentials(): void
     {
         config()->set('services.elevenlabs.key', null);

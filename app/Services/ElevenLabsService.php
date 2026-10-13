@@ -126,15 +126,24 @@ class ElevenLabsService
         $outputFormat = (string) ($options['output_format'] ?? config('services.elevenlabs.output_format', 'mp3_44100_128'));
         $model = (string) ($options['model'] ?? config('services.elevenlabs.model', 'eleven_multilingual_v2'));
 
+        $voiceSettings = [
+            'stability' => (float) ($options['stability'] ?? config('services.elevenlabs.stability', 0.5)),
+            'similarity_boost' => (float) ($options['similarity_boost'] ?? config('services.elevenlabs.similarity_boost', 0.75)),
+            'style' => (float) ($options['style'] ?? config('services.elevenlabs.style', 0.0)),
+            'use_speaker_boost' => (bool) ($options['use_speaker_boost'] ?? config('services.elevenlabs.use_speaker_boost', true)),
+        ];
+
+        // Speech rate (0.7 — 1.2). Sent only when configured, so older models
+        // that reject the field keep working by default.
+        $speed = $options['speed'] ?? config('services.elevenlabs.speed');
+        if (filled($speed)) {
+            $voiceSettings['speed'] = (float) $speed;
+        }
+
         $payload = [
             'text' => trim($text),
             'model_id' => $model,
-            'voice_settings' => [
-                'stability' => (float) ($options['stability'] ?? config('services.elevenlabs.stability', 0.5)),
-                'similarity_boost' => (float) ($options['similarity_boost'] ?? config('services.elevenlabs.similarity_boost', 0.75)),
-                'style' => (float) ($options['style'] ?? config('services.elevenlabs.style', 0.0)),
-                'use_speaker_boost' => (bool) ($options['use_speaker_boost'] ?? config('services.elevenlabs.use_speaker_boost', true)),
-            ],
+            'voice_settings' => $voiceSettings,
         ];
 
         $language = $options['language'] ?? config('services.elevenlabs.language');
