@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PoemText;
 use Database\Factories\PoemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -90,6 +91,14 @@ class Poem extends Model
         }
 
         return $slug;
+    }
+
+    /**
+     * Whether the poem carries a real text (not the importer's placeholder).
+     */
+    public function hasRealText(): bool
+    {
+        return PoemText::looksReal($this->content);
     }
 
     /**

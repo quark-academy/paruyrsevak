@@ -36,6 +36,7 @@
             @endif
 
             <form method="POST" action="{{ route('admin.poems.audio.store', $poem) }}" enctype="multipart/form-data"
+                  data-confirm="Վերբեռնե՞լ նոր աուդիո և փոխարինել ընթացիկը։"
                   class="mb-4 space-y-2 border-t border-stone-100 pt-4">
                 @csrf
                 <label class="block text-xs font-medium text-stone-600">Վերբեռնել օրիգինալ .mp3 (կփոխարինի ԱԻ-ին)</label>
@@ -46,14 +47,50 @@
                 </button>
             </form>
 
+            {{-- Safest path for archive recordings: words + timings straight from the audio. --}}
+            <form method="POST" action="{{ route('admin.poems.audio.transcribe', $poem) }}"
+                  data-confirm="Բառացի ժամանակացույցը կվերագրվի ձայնագրության հիման վրա։ Շարունակե՞լ։"
+                  class="space-y-2 border-t border-stone-100 pt-4">
+                @csrf
+                <label class="block text-xs font-medium text-stone-600">Կարաոկե բառեր ձայնագրությունից</label>
+                <p class="text-[11px] leading-relaxed text-stone-500">
+                    @if ($poem->hasRealText())
+                        Տեքստը կհամաժամեցվի աուդիոյի հետ (ElevenLabs forced alignment)։
+                    @else
+                        Տեքստ դեռ չկա․ ձայնագրությունը կներմուծվի բառերով, տեքստը կլրացվի ավտոմատ։
+                    @endif
+                </p>
+                <button type="submit" @disabled(! $poem->hasAudio())
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    Համաժամեցնել ձայնագրությունից
+                </button>
+            </form>
+
             <form method="POST" action="{{ route('admin.poems.audio.generate', $poem) }}"
+                  data-confirm="Գեներացնե՞լ ԱԻ ձայն և դարձնել այն ակտիվ աուդիո։"
                   class="space-y-2 border-t border-stone-100 pt-4">
                 @csrf
                 <label class="block text-xs font-medium text-stone-600">ElevenLabs ԱԻ գեներացիա</label>
                 <div class="flex flex-wrap items-center gap-3 text-xs text-stone-600">
-                    <label class="flex items-center gap-1"><input type="checkbox" name="force" value="1"> Հարկադրել վերագեներացիա</label>
-                    <label class="flex items-center gap-1"><input type="checkbox" name="sync_words" value="1" checked> Ներմուծել բառային ժամանակացույցը</label>
+                    <label class="flex items-center gap-1">
+                        <input type="checkbox" name="force" value="1"
+                               data-confirm-when-checked="Հարկադրել վերագեներացիա՞ն․ կսպառվի նոր ElevenLabs քվոտա։">
+                        Հարկադրել վերագեներացիա
+                    </label>
+                    <label class="flex items-center gap-1">
+                        <input type="checkbox" name="sync_words" value="1" checked>
+                        Ներմուծել բառային ժամանակացույցը
+                    </label>
                 </div>
+                @if ($poem->is_original && $poem->hasAudio())
+                    <label class="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                        <input type="checkbox" name="replace_original" value="1" class="mt-0.5">
+                        <span>Փոխարինել բնօրինակ (արխիվային) ձայնագրությունը ԱԻ ձայնով։ Առանց այս նշիչի ԱԻ ձայնը չի դառնա ակտիվ աուդիո։</span>
+                    </label>
+                @endif
+                <p class="text-[11px] leading-relaxed text-stone-500">
+                    «Ներմուծել բառային ժամանակացույցը» նշիչը վերագրում է բառերն ու ժամանակացույցը։ Առանց նշիչի գեներացիան պարզապես կրկին կօգտագործի քեշը։
+                </p>
                 <button type="submit" class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                     Գեներացնել ԱԻ ձայն
                 </button>
@@ -61,7 +98,7 @@
 
             @if ($poem->hasAudio())
                 <form method="POST" action="{{ route('admin.poems.audio.destroy', $poem) }}" class="border-t border-stone-100 pt-4"
-                      onsubmit="return confirm('Հեռացնե՞լ աուդիոն։');">
+                      data-confirm="Հեռացնե՞լ աուդիոն։">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="rounded-lg bg-rose-50 px-4 py-2 text-sm text-rose-700 hover:bg-rose-100">Հեռացնել աուդիոն</button>

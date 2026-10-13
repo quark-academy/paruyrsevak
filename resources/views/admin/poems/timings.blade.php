@@ -8,15 +8,30 @@
             <a href="{{ route('admin.poems.show', $poem) }}" class="text-xs text-stone-500 hover:text-stone-900">← {{ $poem->title }}</a>
             <h1 class="text-xl font-bold">Բառային ժամանակացույց</h1>
             <p class="text-sm text-stone-500">Ճշգրիտ կարաոկե համաժամեցում՝ ըստ վայրկյանների։</p>
+            <p class="mt-1 max-w-2xl text-[11px] leading-relaxed text-stone-500">
+                «Համաժամեցնել ձայնագրությունից» — բառերն ու ժամանակացույցը ստացվում են առկա աուդիոյից
+                (տեքստի դեպքում՝ forced alignment, առանց տեքստի՝ transcription)։ Անվտանգ է արխիվային ձայնագրությունների համար։
+                «Համաժամեցնել ElevenLabs-ից» — գեներացնում է ԱԻ ձայն և ներմուծում նրա ժամանակացույցը։
+            </p>
         </div>
         <div class="flex flex-wrap gap-2 text-sm">
-            <form method="POST" action="{{ route('admin.poems.timings.sync', $poem) }}">
+            <form method="POST" action="{{ route('admin.poems.audio.transcribe', $poem) }}"
+                  data-confirm="Բառերն ու ժամանակացույցը կվերագրվեն աուդիոյի հիման վրա։ Շարունակե՞լ։">
                 @csrf
-                <button class="rounded-lg bg-stone-200 px-3 py-2 hover:bg-stone-300">Վերագեներացնել բառերը</button>
+                <button type="submit" @disabled(! $poem->hasAudio())
+                        class="rounded-lg bg-emerald-600 px-3 py-2 font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    Համաժամեցնել ձայնագրությունից
+                </button>
             </form>
-            <form method="POST" action="{{ route('admin.poems.audio.align', $poem) }}">
+            <form method="POST" action="{{ route('admin.poems.timings.sync', $poem) }}"
+                  data-confirm="Բառերը կվերագեներացվեն տեքստից․ ձեռքով արված ժամանակացույցը կարող է կորչել։ Շարունակե՞լ։">
                 @csrf
-                <button class="rounded-lg bg-sky-600 px-3 py-2 font-medium text-white hover:bg-sky-700">Համաժամեցնել ElevenLabs-ից</button>
+                <button type="submit" class="rounded-lg bg-stone-200 px-3 py-2 hover:bg-stone-300">Վերագեներացնել բառերը</button>
+            </form>
+            <form method="POST" action="{{ route('admin.poems.audio.align', $poem) }}"
+                  data-confirm="Կգեներացվի ԱԻ ձայն (կսպառվի ElevenLabs քվոտա) և կվերագրվի բառային ժամանակացույցը։ Շարունակե՞լ։">
+                @csrf
+                <button type="submit" class="rounded-lg bg-sky-600 px-3 py-2 font-medium text-white hover:bg-sky-700">Համաժամեցնել ElevenLabs-ից</button>
             </form>
         </div>
     </div>

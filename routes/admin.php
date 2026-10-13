@@ -28,6 +28,8 @@ Route::middleware(['auth', 'admin'])->group(function (): void {
     Route::post('poems/{poem}/audio', [PoemAudioController::class, 'store'])->name('poems.audio.store');
     Route::post('poems/{poem}/audio/generate', [PoemAudioController::class, 'generate'])->name('poems.audio.generate');
     Route::post('poems/{poem}/audio/align', [PoemAudioController::class, 'align'])->name('poems.audio.align');
+    // Karaoke words + timings built from the poem's own (archive) recording.
+    Route::post('poems/{poem}/audio/transcribe', [PoemAudioController::class, 'transcribe'])->name('poems.audio.transcribe');
     Route::delete('poems/{poem}/audio', [PoemAudioController::class, 'destroy'])->name('poems.audio.destroy');
 
     // Karaoke word timings

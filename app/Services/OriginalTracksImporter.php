@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Poem;
+use App\Support\PoemText;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -229,6 +230,6 @@ class OriginalTracksImporter
      */
     protected function placeholder(string $title): string
     {
-        return $title."\n\n".'Արխիվային ձայնագրություն Պարույր Սևակի կատարմամբ։ Տեքստը կարելի է ավելացնել ադմին վահանակում։';
+        return $title."\n\n".'Արխիվային ձայնագրություն Պարույր Սևակի կատարմամբ։ '.PoemText::PLACEHOLDER_MARKER.'։';
     }
 }

@@ -18,7 +18,9 @@ class PoemWordController extends Controller
      */
     public function edit(Poem $poem): View
     {
-        if ($poem->words()->count() === 0) {
+        // Words are generated from the text, so a placeholder text (imported
+        // archive recording without lyrics yet) must not create word rows.
+        if ($poem->words()->count() === 0 && $poem->hasRealText()) {
             $this->wordSynchronizer->syncFromContent($poem);
         }
 

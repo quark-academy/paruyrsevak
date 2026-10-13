@@ -72,6 +72,10 @@ return [
         'speed' => env('ELEVENLABS_SPEED'),
         'disk' => env('ELEVENLABS_DISK', 'public'),
         'directory' => env('ELEVENLABS_DIRECTORY', 'ai_audio'),
+        // Speech to text (used to build karaoke words from archive recordings).
+        // Leave the language empty to let Scribe detect it, or set "hy"/"hye".
+        'stt_model' => env('ELEVENLABS_STT_MODEL', 'scribe_v2'),
+        'stt_language' => env('ELEVENLABS_STT_LANGUAGE'),
     ],
 
 ];

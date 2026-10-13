@@ -51,7 +51,7 @@
                                 <a href="{{ route('admin.poems.show', $poem) }}" class="rounded-lg bg-stone-100 px-2 py-1 hover:bg-stone-200">Դիտել</a>
                                 <a href="{{ route('admin.poems.edit', $poem) }}" class="rounded-lg bg-stone-100 px-2 py-1 hover:bg-stone-200">Խմբագրել</a>
                                 <form method="POST" action="{{ route('admin.poems.destroy', $poem) }}"
-                                      onsubmit="return confirm('Ջնջե՞լ {{ $poem->title }}‑ը։');">
+                                      data-confirm="Ջնջե՞լ {{ $poem->title }}‑ը։">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="rounded-lg bg-rose-50 px-2 py-1 text-rose-700 hover:bg-rose-100">Ջնջել</button>

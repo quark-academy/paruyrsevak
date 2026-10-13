@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Poem;
+use App\Support\PoemText;
 use App\Support\WordTokenizer;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -302,6 +304,187 @@ class ElevenLabsService
                 'end' => round($cursor + $span, 2),
             ];
             $cursor += $span;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Build karaoke word timings from the poem's own recording.
+     *
+     *  - the poem has a real text → POST /forced-alignment (exact timing for
+     *    the known text, works for archive recordings in any language);
+     *  - no text yet → POST /speech-to-text with word timestamps, which also
+     *    returns the transcript so the poem text can be filled automatically.
+     *
+     * @return array{words: array<int, array{word: string, start: float, end: float}>, loss: float|null, method: string, text: string|null}
+     */
+    public function alignFromPoemAudio(Poem $poem, ?string $language = null): array
+    {
+        $audio = $this->audioContents($poem);
+        $fileName = basename((string) $poem->audio_path) ?: ($poem->slug ?: 'poem').'.mp3';
+
+        if (PoemText::looksReal($poem->content)) {
+            return $this->alignAudioToText($audio, $fileName, (string) $poem->content);
+        }
+
+        return $this->transcribeAudio($audio, $fileName, $language);
+    }
+
+    /**
+     * Raw bytes of the active recording (archive or AI rendered) of a poem.
+     */
+    public function audioContents(Poem $poem): string
+    {
+        $path = (string) $poem->audio_path;
+        $disk = Storage::disk($this->disk());
+
+        if ($path === '' || ! $disk->exists($path)) {
+            throw new RuntimeException('The audio file of the poem was not found on the "'.$this->disk().'" disk.');
+        }
+
+        return (string) $disk->get($path);
+    }
+
+    /**
+     * POST /forced-alignment — timing information for a known transcript.
+     *
+     * @return array{words: array<int, array{word: string, start: float, end: float}>, loss: float|null, method: string, text: string|null}
+     */
+    public function alignAudioToText(string $audio, string $fileName, string $text): array
+    {
+        $this->guardConfigured(withVoice: false);
+
+        $response = $this->http()
+            ->attach('file', $audio, $fileName)
+            ->post($this->baseUrl.'/forced-alignment', ['text' => trim($text)]);
+
+        $data = $this->decodeOrFail($response, 'forced alignment');
+
+        return [
+            'words' => $this->normaliseApiWords($data['words'] ?? []),
+            'loss' => isset($data['loss']) ? (float) $data['loss'] : null,
+            'method' => 'alignment',
+            'text' => null,
+        ];
+    }
+
+    /**
+     * POST /speech-to-text — transcribe a recording with word level timestamps.
+     *
+     * @return array{words: array<int, array{word: string, start: float, end: float}>, loss: float|null, method: string, text: string|null}
+     */
+    public function transcribeAudio(string $audio, string $fileName, ?string $language = null): array
+    {
+        $this->guardConfigured(withVoice: false);
+
+        $payload = [
+            'model_id' => (string) config('services.elevenlabs.stt_model', 'scribe_v2'),
+            'timestamps_granularity' => 'word',
+            'tag_audio_events' => 'false',
+        ];
+
+        $language = $language ?: config('services.elevenlabs.stt_language');
+
+        if (filled($language)) {
+            $payload['language_code'] = (string) $language;
+        }
+
+        $response = $this->http()
+            ->attach('file', $audio, $fileName)
+            ->post($this->baseUrl.'/speech-to-text', $payload);
+
+        $data = $this->decodeOrFail($response, 'transcription');
+
+        return [
+            'words' => $this->normaliseApiWords($data['words'] ?? []),
+            'loss' => null,
+            'method' => 'transcription',
+            'text' => filled($data['text'] ?? null) ? trim((string) $data['text']) : null,
+        ];
+    }
+
+    /**
+     * Speech to text / alignment only need the API key, not the voice id.
+     *
+     * @throws RuntimeException
+     */
+    protected function guardConfigured(bool $withVoice = true): void
+    {
+        if (blank($this->apiKey)) {
+            throw new RuntimeException('ElevenLabs is not configured. Set ELEVENLABS_API_KEY.');
+        }
+
+        if ($withVoice && blank($this->voiceId)) {
+            throw new RuntimeException('ElevenLabs voice id is not configured. Set ELEVENLABS_VOICE_ID.');
+        }
+    }
+
+    /**
+     * Decode a JSON response, surfacing API and Cloudflare errors clearly.
+     *
+     * @return array<string, mixed>
+     */
+    protected function decodeOrFail(Response $response, string $what): array
+    {
+        if ($response->failed()) {
+            Log::error('ElevenLabs '.$what.' failed', [
+                'status' => $response->status(),
+                'body' => Str::limit($response->body(), 1000),
+            ]);
+
+            if ($this->isCloudflareChallenge($response->body())) {
+                throw new RuntimeException(
+                    'ElevenLabs declined the request (Cloudflare 403). Check ELEVENLABS_API_KEY / ELEVENLABS_USER_AGENT, or route the calls through a proxy Worker via ELEVENLABS_BASE_URL.'
+                );
+            }
+
+            throw new RuntimeException(
+                'ElevenLabs '.$what.' failed with HTTP '.$response->status().': '.Str::limit($response->body(), 300)
+            );
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            throw new RuntimeException('ElevenLabs '.$what.' returned an unexpected (non-JSON) response.');
+        }
+
+        return $data;
+    }
+
+    /**
+     * Map the API word list (alignment or Scribe) to {word, start, end} rows.
+     *
+     * Scribe also returns "spacing"/"audio_event" entries — those are skipped.
+     *
+     * @param  array<int|string, mixed>  $words
+     * @return array<int, array{word: string, start: float, end: float}>
+     */
+    protected function normaliseApiWords(array $words): array
+    {
+        $result = [];
+
+        foreach ($words as $word) {
+            if (! is_array($word)) {
+                continue;
+            }
+
+            if (isset($word['type']) && $word['type'] !== 'word') {
+                continue;
+            }
+
+            $text = trim((string) ($word['text'] ?? $word['word'] ?? ''));
+
+            if ($text === '') {
+                continue;
+            }
+
+            $result[] = [
+                'word' => $text,
+                'start' => round((float) ($word['start'] ?? 0), 2),
+                'end' => round((float) ($word['end'] ?? 0), 2),
+            ];
         }
 
         return $result;

@@ -62,6 +62,28 @@
     @yield('content')
 </div>
 
+<script>
+// Confirmation dialogs for destructive admin actions.
+//   <form data-confirm="...">                             always asks
+//   <input type="checkbox" data-confirm-when-checked="..."> asks when ticked
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+
+    if (!(form instanceof HTMLFormElement)) {
+        return;
+    }
+
+    const trigger = form.querySelector('input[data-confirm-when-checked]');
+    const message = (trigger && trigger.checked)
+        ? trigger.dataset.confirmWhenChecked
+        : form.dataset.confirm;
+
+    if (message && !window.confirm(message)) {
+        event.preventDefault();
+    }
+});
+</script>
+
 @stack('scripts')
 </body>
 </html>
