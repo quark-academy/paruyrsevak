@@ -1,6 +1,5 @@
 <?php
 
-use App\Support\RequestBasePath;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
@@ -18,9 +17,4 @@ require __DIR__.'/../vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/../bootstrap/app.php';
 
-// Subdirectory deployments (docroot is a symlink to this directory) need the
-// base path from APP_URL, otherwise Laravel treats "/sevak" as a route segment.
-$request = Request::capture();
-RequestBasePath::apply($request);
-
-$app->handleRequest($request);
+$app->handleRequest(Request::capture());
