@@ -4,36 +4,46 @@
 #  Проект:  ~/lab.quark.am/public_html/sevak
 #  Сайт:    https://lab.quark.am/sevak
 #
-#  ВАЖНО: если имя папки отличается от "sevak", замените "sevak" в
-#  RewriteCond ниже (строка `%{DOCUMENT_ROOT}/sevak/public/$1 -f`).
+#  Имя папки нигде не захардкожено — файл работает при любом названии папки.
+#  Если .htaccess не читается хостингом (AllowOverride None) — см. DEPLOY_TIMEWEB.md,
+#  там есть альтернатива: указать в панели document root = .../sevak/public
 # =============================================================================
 
 # Запрет листинга каталогов
 Options -Indexes
 
-DirectoryIndex public/index.php
-
 # --- Блокировка скрытых файлов (.env, .git, .gitignore, ...) -----------------
 <FilesMatch "^\.">
-    Require all denied
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 # --- Блокировка служебных файлов --------------------------------------------
 <FilesMatch "^(composer\.(json|lock)|artisan|phpunit\.xml|package(-lock)?\.json|vite\.config\.js|README\.md|CHANGELOG.*)$">
-    Require all denied
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # (1) Запрос уже указывает на public/ — не вмешиваемся.
-    #     Это защита от бесконечной перезаписи и «дыры» в служебные папки.
+    # (1) Запрос уже указывает на public/ — не вмешиваемся (защита от кольца).
     RewriteRule ^public/ - [L]
 
-    # (2) Существующие файлы из public/ (build/, storage/, robots.txt, ...)
-    RewriteCond %{DOCUMENT_ROOT}/sevak/public/$1 -f
-    RewriteRule ^(.*)$ public/$1 [L]
+    # (2) Корень проекта -> front controller Laravel.
+    RewriteRule ^$ public/index.php [L]
 
-    # (3) Всё остальное — front controller Laravel.
-    RewriteRule ^ public/index.php [L]
+    # (3) Страницы (маршруты) и статика из public/ (build/, storage/, ...).
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
+
