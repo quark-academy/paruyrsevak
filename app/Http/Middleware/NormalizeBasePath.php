@@ -19,10 +19,14 @@ use Symfony\Component\HttpFoundation\Response;
  *   - generated URLs lose the "/sevak" prefix (redirects land on /admin).
  *
  * Fix: tell Symfony the front controller lives directly in the base path taken
- * from APP_URL. This must run before anything reads the request path, hence the
- * global "prepend" registration in bootstrap/app.php.
+ * from APP_URL (or, when APP_URL has no path, from the script name the server
+ * reports). A bare base path request ("/sevak", which the standard
+ * "public/.htaccess" produces by stripping the trailing slash) is normalised to
+ * the directory request ("/sevak/"). This must run before anything reads the
+ * request path, hence the global "prepend" registration in bootstrap/app.php.
  *
- * With no path in APP_URL (root deployments, local dev, tests) nothing changes.
+ * Root deployments (APP_URL without a path and an "/index.php" script) are left
+ * untouched.
  */
 class NormalizeBasePath
 {
