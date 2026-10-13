@@ -21,6 +21,10 @@ env.*.example
 
 .phpactor.json
 .phpunit.result.cache
+
+# Composer installer (базовый composer.phar качается на сервере)
+composer.phar
+composer-setup.php
 /.fleet
 /.idea
 /.nova
