@@ -1,6 +1,10 @@
 {
+  "_gestures-CrtWDh26.js": {
+    "file": "assets/gestures-CrtWDh26.js",
+    "name": "gestures"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-DDIpPD-S.css",
+    "file": "assets/app-C9kL1I1-.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,18 +13,21 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DMsN-rLE.js",
+    "file": "assets/app-Ib5rJhwg.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_gestures-CrtWDh26.js"
+    ]
   },
   "resources/js/poem-shorts.js": {
-    "file": "assets/poem-shorts-jhUg1y9L.js",
+    "file": "assets/poem-shorts-CPs1-IRx.js",
     "name": "poem-shorts",
     "src": "resources/js/poem-shorts.js",
     "isEntry": true,
     "imports": [
-      "resources/js/app.js"
+      "_gestures-CrtWDh26.js"
     ]
   }
 }

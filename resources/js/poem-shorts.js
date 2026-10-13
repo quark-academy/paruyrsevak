@@ -1,6 +1,10 @@
 import { createApp } from 'vue';
 import PoemShorts from './components/PoemShorts.vue';
 import './bootstrap';
+import { lockPageZoom } from './gestures';
+
+// Tapping a control on a phone must not zoom the full-screen player.
+lockPageZoom();
 
 /**
  * Mounts the Shorts player on the canonical poem page (/{slug}).

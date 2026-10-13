@@ -78,3 +78,34 @@
     display: none;
 }
 
+/* ------------------------------------------------------------------ */
+/* Phone gestures                                                     */
+/* ------------------------------------------------------------------ */
+
+/* Aiming for a control must never zoom the page. Panning (scrolling)
+   stays available, pinch-zoom and double-tap-zoom do not. iOS Safari has
+   ignored user-scalable=no since iOS 10, so touch-action does the work,
+   and gestures.js covers the rest. */
+html,
+body {
+    touch-action: pan-x pan-y;
+}
+
+/* Double-tap zoom off on every control (and no 300 ms tap delay). */
+a,
+button,
+input,
+label,
+select,
+summary,
+textarea,
+[role='button'] {
+    touch-action: manipulation;
+}
+
+/* iOS keeps text at the chosen size when the phone is rotated. */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
