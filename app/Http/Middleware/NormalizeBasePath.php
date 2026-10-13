@@ -90,32 +90,69 @@ class NormalizeBasePath
      */
     protected function detectBasePath(Request $request): string
     {
-        $uri = (string) strtok((string) $request->server->get('REQUEST_URI', ''), '?');
+        $uri = '/'.trim((string) strtok((string) $request->server->get('REQUEST_URI', ''), '?'), '/');
 
         foreach (['SCRIPT_NAME', 'PHP_SELF', 'ORIG_SCRIPT_NAME'] as $key) {
-            $script = (string) $request->server->get($key, '');
+            $directory = $this->directoryOf((string) $request->server->get($key, ''));
 
-            if ($script === '') {
-                continue;
-            }
-
-            $directory = rtrim(str_replace('\\', '/', dirname($script)), '/');
-
-            // ".../sevak/public/index.php" (docroot symlinked to public/).
-            if (str_ends_with($directory, '/public')) {
-                $directory = substr($directory, 0, -7);
-            }
-
-            if ($directory === '' || $directory === '.') {
-                continue;
-            }
-
-            // Trust only a path that the request itself starts with.
-            if ($uri === $directory || str_starts_with($uri, $directory.'/')) {
+            if ($directory !== null && ($uri === $directory || str_starts_with($uri, $directory.'/'))) {
                 return $directory;
             }
         }
 
-        return '';
+        return $this->basePathFromFileLocation($request, $uri);
+    }
+
+    /**
+     * Base path from the on-disk location of the front controller.
+     *
+     * Shared hosting layout: DOCUMENT_ROOT=/home/user/lab.quark.am/public_html,
+     * the project in public_html/sevak (a symlink to its public directory) and
+     * the front controller at public_html/sevak/index.php. PHP-FPM reports
+     * SCRIPT_NAME=/index.php there, so the prefix cannot be read from the script
+     * name — but the first segment of the script path relative to the document
+     * root ("sevak") is exactly the URL prefix.
+     */
+    protected function basePathFromFileLocation(Request $request, string $uri): string
+    {
+        $documentRoot = rtrim(str_replace('\\', '/', (string) $request->server->get('DOCUMENT_ROOT', '')), '/');
+        $script = str_replace('\\', '/', (string) $request->server->get('SCRIPT_FILENAME', ''));
+
+        if ($documentRoot === '' || $script === '' || ! str_starts_with($script, $documentRoot.'/')) {
+            return '';
+        }
+
+        $relative = trim(substr($script, strlen($documentRoot)), '/');
+        $directory = $this->directoryOf($relative);
+
+        if ($directory === null || $directory === '/public') {
+            return '';
+        }
+
+        return ($uri === $directory || str_starts_with($uri, $directory.'/')) ? $directory : '';
+    }
+
+    /**
+     * Normalise a script (or app-relative) path into "/segment" — the first
+     * directory above the front controller, or null when there is none.
+     */
+    protected function directoryOf(string $script): ?string
+    {
+        if ($script === '') {
+            return null;
+        }
+
+        $directory = rtrim(str_replace('\\', '/', dirname($script)), '/');
+
+        // ".../sevak/public/index.php" (docroot symlinked to public/).
+        if (str_ends_with($directory, '/public')) {
+            $directory = substr($directory, 0, -7);
+        }
+
+        if ($directory === '' || $directory === '.' || $directory === '/' || str_contains($directory, '.')) {
+            return null;
+        }
+
+        return str_starts_with($directory, '/') ? $directory : '/'.$directory;
     }
 }

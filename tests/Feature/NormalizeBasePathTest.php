@@ -130,6 +130,58 @@ class NormalizeBasePathTest extends TestCase
         $this->assertSame('poems.index', app('router')->getRoutes()->match($request)->getName());
     }
 
+    public function test_base_path_is_recovered_from_the_file_location(): void
+    {
+        // Shared hosting variant where PHP-FPM reports SCRIPT_NAME=/index.php:
+        // DOCUMENT_ROOT is public_html and the front controller lives in
+        // public_html/sevak (the URL prefix), so only the file path tells the
+        // application where it is mounted.
+        config()->set('app.url', 'https://lab.quark.am');
+
+        $request = Request::create('https://lab.quark.am/sevak/', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/home/user/lab.quark.am/public_html/sevak/index.php');
+        $request->server->set('DOCUMENT_ROOT', '/home/user/lab.quark.am/public_html');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/sevak', $request->getBaseUrl());
+        $this->assertSame('/', $request->getPathInfo());
+        $this->assertSame('home', app('router')->getRoutes()->match($request)->getName());
+    }
+
+    public function test_the_file_location_variant_keeps_page_paths(): void
+    {
+        config()->set('app.url', 'https://lab.quark.am');
+
+        $request = Request::create('https://lab.quark.am/sevak/aprel-aprel', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/home/user/lab.quark.am/public_html/sevak/index.php');
+        $request->server->set('DOCUMENT_ROOT', '/home/user/lab.quark.am/public_html');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/sevak', $request->getBaseUrl());
+        $this->assertSame('/aprel-aprel', $request->getPathInfo());
+        $this->assertSame('poems.short', app('router')->getRoutes()->match($request)->getName());
+    }
+
+    public function test_a_root_project_directory_is_not_treated_as_a_base_path(): void
+    {
+        // The document root IS the project root: nothing is prefixed in the URL.
+        config()->set('app.url', 'https://example.am');
+
+        $request = Request::create('https://example.am/demo-ashun', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/var/www/example.am/public/index.php');
+        $request->server->set('DOCUMENT_ROOT', '/var/www/example.am');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('', $request->getBaseUrl());
+        $this->assertSame('/demo-ashun', $request->getPathInfo());
+    }
+
     public function test_unrelated_requests_keep_their_path(): void
     {
         // A root deployment: nothing to normalise at all.
