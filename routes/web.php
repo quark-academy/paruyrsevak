@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PoemController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
@@ -10,3 +11,9 @@ Route::get('/poems', [PoemController::class, 'index'])->name('poems.index');
 Route::get('/poems/{poem}', [PoemController::class, 'show'])->name('poems.show');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+
+// Fallback for "public" disk files (/storage/...). Apache serves them directly
+// when public/storage symlink exists; otherwise Laravel streams the file.
+Route::get('/storage/{path}', MediaController::class)
+    ->where('path', '.*')
+    ->name('media');

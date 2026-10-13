@@ -33,7 +33,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Disabled on purpose: this flag makes Laravel register its own
+            // "storage/{path}" route (named storage.local), which shadows our
+            // MediaController fallback and answers 403 for /storage/... audio.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
