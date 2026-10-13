@@ -63,7 +63,9 @@ class OriginalTracksImporter
 
         foreach ($this->audioFiles($source) as $file) {
             $title = $this->titleFor(basename($file), $titleOverrides);
-            $slug = Poem::makeUniqueSlug($title);
+            $poem = $this->findExistingPoem($title);
+            $created = $poem === null;
+            $slug = filled($poem?->slug) ? (string) $poem->slug : Poem::makeUniqueSlug($title);
             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION)) ?: 'mp3';
             $target = static::DIRECTORY.'/'.$slug.'.'.$extension;
 
@@ -72,8 +74,6 @@ class OriginalTracksImporter
             }
 
             $lyrics = $this->lyricsFor($slug, pathinfo(basename($file), PATHINFO_FILENAME), $lyricsPath);
-            $poem = Poem::query()->where('slug', $slug)->first();
-            $created = $poem === null;
 
             $poem ??= new Poem;
 
@@ -86,8 +86,14 @@ class OriginalTracksImporter
                 'meta_description' => $poem->meta_description ?: $this->description($title, $lyrics),
             ]);
 
-            // Never overwrite a text that is already there (admin edits win).
-            if (blank($poem->content)) {
+            // Fill the text only when it is empty or still a placeholder, so
+            // manual edits made in the admin panel are never overwritten.
+            $existing = trim((string) $poem->content);
+            $isPlaceholder = $existing === ''
+                || $existing === trim($this->placeholder((string) $poem->title))
+                || $existing === trim($this->placeholder($title));
+
+            if ($isPlaceholder) {
                 $poem->content = $lyrics ?? $this->placeholder($title);
             }
 
@@ -113,18 +119,30 @@ class OriginalTracksImporter
     }
 
     /**
-     * Folder to scan: explicit path, then ./original_tracks, then storage paths.
+     * Existing poem for the given title, matched by title or by its base slug,
+     * so that re-running the importer never creates duplicates.
+     */
+    protected function findExistingPoem(string $title): ?Poem
+    {
+        $base = Str::slug($title);
+
+        return Poem::query()
+            ->where('title', $title)
+            ->when(filled($base), fn ($query) => $query->orWhere('slug', $base))
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Folder to scan: explicit path (strict), then ./original_tracks, then storage paths.
      */
     public function resolveSource(?string $source): ?string
     {
-        $candidates = array_filter([
-            $source,
-            base_path('original_tracks'),
-            storage_path('original_tracks'),
-            storage_path('app/original_tracks'),
-        ]);
+        if (filled($source)) {
+            return is_dir($source) ? rtrim($source, '/') : null;
+        }
 
-        foreach ($candidates as $candidate) {
+        foreach ([base_path('original_tracks'), storage_path('original_tracks'), storage_path('app/original_tracks')] as $candidate) {
             if (is_dir($candidate)) {
                 return rtrim($candidate, '/');
             }
@@ -214,4 +232,3 @@ class OriginalTracksImporter
         return $title."\n\n".'Արխիվային ձայնագրություն Պարույր Սևակի կատարմամբ։ Տեքստը կարելի է ավելացնել ադմին վահանակում։';
     }
 }
-

@@ -32,5 +32,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="SEED_DEMO_POEMS" value="false"/>
+        <env name="SEED_ORIGINAL_TRACKS" value="false"/>
     </php>
 </phpunit>
