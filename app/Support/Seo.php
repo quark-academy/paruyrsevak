@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Poem;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Central SEO helper: canonical URLs and meta defaults.
@@ -35,6 +36,19 @@ class Seo
     public static function forPoem(Poem $poem): string
     {
         return self::canonical($poem->slug);
+    }
+
+    /**
+     * Best public URL for internal links: the short "/{slug}" route when it is
+     * enabled, otherwise the classic "/poems/{slug}" reading page.
+     */
+    public static function poemUrl(Poem $poem, bool $absolute = false): string
+    {
+        if (Route::has('poems.short')) {
+            return route('poems.short', ['poem' => $poem], $absolute);
+        }
+
+        return route('poems.show', ['poem' => $poem], $absolute);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 @section('title', ($poem->meta_title ?: $poem->title).' · '.config('app.name'))
 @section('meta_description', $poem->meta_description ?: $poem->excerpt(150))
+@section('canonical', \App\Support\Seo::forPoem($poem))
 
 @push('meta')
     <meta property="og:title" content="{{ $poem->meta_title ?: $poem->title }}">
@@ -12,6 +13,11 @@
 @section('content')
     <a href="{{ route('poems.index') }}" class="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-900">
         ← Բոլոր բանաստեղծությունները
+    </a>
+
+    <a href="{{ \App\Support\Seo::poemUrl($poem) }}"
+       class="mb-4 ml-2 inline-flex items-center gap-1 rounded-full bg-stone-900 px-3 py-1 text-xs font-medium text-white hover:bg-stone-800">
+        ▶ Կարաոկե ռեժիմ
     </a>
 
     <article class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">

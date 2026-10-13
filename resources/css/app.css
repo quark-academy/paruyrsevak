@@ -4,8 +4,77 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.vue';
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* ------------------------------------------------------------------ */
+/* Shorts karaoke player                                              */
+/* ------------------------------------------------------------------ */
+
+.karaoke-word {
+    transition: color 0.25s ease, transform 0.25s ease, text-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.karaoke-word--pending {
+    color: rgba(255, 255, 255, 0.32);
+}
+
+.karaoke-word--sung {
+    color: rgba(232, 196, 106, 0.6);
+}
+
+.karaoke-word--active {
+    color: #ffe9b0;
+    transform: scale(1.06);
+    text-shadow: 0 0 18px rgba(232, 196, 106, 0.55);
+    background-color: rgba(232, 196, 106, 0.1);
+}
+
+/* Soft top/bottom fade so overflowing lyrics do not hit the edges. */
+.karaoke-mask {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14%, #000 82%, transparent 100%);
+}
+
+.karaoke-scroller {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+}
+
+.karaoke-scroller::-webkit-scrollbar {
+    display: none;
+}
+
+/* Idle / loading breathing animation for the poet silhouette. */
+@keyframes sevak-breathe {
+    0%,
+    100% {
+        opacity: 0.72;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+.sevak-breathe {
+    animation: sevak-breathe 3.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(232, 196, 106, 0.18));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sevak-breathe {
+        animation: none;
+    }
+}
+
+[v-cloak] {
+    display: none;
+}
+

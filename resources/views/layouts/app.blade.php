@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#1c1917">
     <title>@yield('title', config('app.name'))</title>
-    <meta name="description" content="@yield('meta_description', 'Պարույր Սևակի բանաստեղծությունների աուդիո և կարաոկե հավաքածու')">
-    <link rel="canonical" href="{{ url()->current() }}">
+    <meta name="description" content="@yield('meta_description', \App\Support\Seo::defaultDescription())">
+    <link rel="canonical" href="@yield('canonical', \App\Support\Seo::canonical(request()->path()))">
+    <meta property="og:site_name" content="{{ config('app.name') }}">
+    <meta property="og:url" content="@yield('canonical', \App\Support\Seo::canonical(request()->path()))">
+    <meta name="twitter:card" content="summary">
     @stack('meta')
 
     <link rel="preconnect" href="https://fonts.bunny.net">

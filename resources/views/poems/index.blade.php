@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('title', $term !== '' ? "Որոնում՝ {$term}" : 'Բանաստեղծություններ')
+@section('meta_description', \App\Support\Seo::defaultDescription())
+@section('canonical', \App\Support\Seo::canonical())
 
 @section('content')
     <section class="mb-6 rounded-2xl bg-stone-900 px-5 py-6 text-stone-50">
@@ -23,7 +25,7 @@
     @else
         <div class="grid gap-3 sm:grid-cols-2">
             @foreach ($poems as $poem)
-                <a href="{{ route('poems.show', $poem) }}"
+                <a href="{{ \App\Support\Seo::poemUrl($poem) }}"
                    class="group flex flex-col rounded-2xl border border-stone-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                     <div class="flex items-start justify-between gap-2">
                         <h2 class="text-base font-semibold leading-snug">{{ $poem->title }}</h2>
