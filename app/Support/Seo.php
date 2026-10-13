@@ -42,7 +42,7 @@ class Seo
      * Best public URL for internal links: the short "/{slug}" route when it is
      * enabled, otherwise the classic "/poems/{slug}" reading page.
      */
-    public static function poemUrl(Poem $poem, bool $absolute = false): string
+    public static function poemUrl(Poem $poem, bool $absolute = true): string
     {
         if (Route::has('poems.short')) {
             return route('poems.short', ['poem' => $poem], $absolute);

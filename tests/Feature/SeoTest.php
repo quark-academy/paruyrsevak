@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Poem;
 use App\Support\Seo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class SeoTest extends TestCase
@@ -33,7 +34,14 @@ class SeoTest extends TestCase
     {
         $poem = Poem::factory()->create(['slug' => 'short-link']);
 
-        $this->assertSame('/short-link', Seo::poemUrl($poem));
+        $this->assertSame(route('poems.short', $poem), Seo::poemUrl($poem));
+    }
+
+    public function test_poem_url_can_be_rendered_relative(): void
+    {
+        $poem = Poem::factory()->create(['slug' => 'relative-link']);
+
+        $this->assertSame('/relative-link', Seo::poemUrl($poem, absolute: false));
     }
 
     public function test_title_and_description_fall_back_to_poem_fields(): void
@@ -65,5 +73,29 @@ class SeoTest extends TestCase
         $this->get('/poems')
             ->assertOk()
             ->assertSee('<link rel="canonical" href="https://subdomain.domain.am/"', false);
+    }
+
+    public function test_subdirectory_deployment_generates_prefixed_urls(): void
+    {
+        config()->set('poems.canonical_base', 'https://lab.quark.am/sevak');
+
+        $poem = Poem::factory()->create(['slug' => 'sub-link']);
+
+        // Mirrors what AppServiceProvider does when APP_FORCE_ROOT_URL=true.
+        URL::forceRootUrl('https://lab.quark.am/sevak');
+        URL::forceScheme('https');
+        // Mirrors the ASSET_URL binding (config('app.asset_url')).
+        URL::useAssetOrigin('https://lab.quark.am/sevak');
+
+        $this->assertSame('https://lab.quark.am/sevak/sub-link', Seo::poemUrl($poem));
+        $this->assertSame('https://lab.quark.am/sevak/sub-link', Seo::forPoem($poem));
+        $this->assertSame('https://lab.quark.am/sevak/api/poems/sub-link', route('api.poems.player', $poem));
+        $this->assertSame('https://lab.quark.am/sevak/build/app.css', asset('build/app.css'));
+    }
+
+    public function test_subdirectory_config_keys_are_available(): void
+    {
+        $this->assertArrayHasKey('asset_url', config('app'));
+        $this->assertArrayHasKey('force_root_url', config('app'));
     }
 }

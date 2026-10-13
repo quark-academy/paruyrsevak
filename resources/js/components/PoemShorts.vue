@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
             class="relative z-20 flex items-center justify-between gap-2 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-1"
         >
             <a
-                href="/"
+                :href="source.homeUrl || '/'"
                 class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs font-bold"
                 aria-label="Գլխավոր"
             >ՊՍ</a>

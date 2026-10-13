@@ -56,6 +56,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Asset URL & Forced Root URL
+    |--------------------------------------------------------------------------
+    |
+    | ASSET_URL is required when the application is served from a subdirectory
+    | (e.g. https://lab.quark.am/sevak) because @vite/asset() would otherwise
+    | generate URLs without the subdirectory prefix.
+    |
+    | APP_FORCE_ROOT_URL makes route()/url() always use APP_URL as the root,
+    | which keeps generated links clean (no "/public" segment) on shared
+    | hosting where the project lives inside public_html.
+    |
+    */
+
+    'asset_url' => env('ASSET_URL'),
+
+    'force_root_url' => filter_var(env('APP_FORCE_ROOT_URL', false), FILTER_VALIDATE_BOOL),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -1,8 +1,24 @@
 *.log
 .DS_Store
+
+# ---------------------------------------------------------------------------
+# Environment files — never committed to git.
+# Create .env on the server by hand (see DEPLOY_TIMEWEB.md) or upload it
+# via scp/FTP. Templates (*env.example) are local-only as well.
+# ---------------------------------------------------------------------------
 .env
-.env.backup
-.env.production
+.env.*
+*.env
+*env.example
+env.*.example
+
+# ---------------------------------------------------------------------------
+# Documentation — only the main README.md is tracked.
+# CHANGELOG_STEP_*.md and DEPLOY_TIMEWEB.md stay local (not pushed).
+# ---------------------------------------------------------------------------
+*.md
+!/README.md
+
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -13,7 +29,9 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# Compiled front-end assets ARE committed on purpose: shared hosting
+# (timeweb) has no Node.js, so `npm run build` must be done locally and
+# pushed. Rebuild + commit after any change in resources/css or resources/js.
 /public/hot
 /public/storage
 /storage/*.key

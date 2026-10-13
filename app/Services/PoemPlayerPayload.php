@@ -38,10 +38,11 @@ class PoemPlayerPayload
             'isOriginal' => (bool) $poem->is_original,
             'canonical' => Seo::forPoem($poem),
             'lines' => $this->buildLines($poem, $words),
-            'readingUrl' => route('poems.show', $poem, false),
-            'playerUrl' => route('api.poems.player', ['poem' => $poem], false),
+            'homeUrl' => route('home'),
+            'readingUrl' => route('poems.show', $poem),
+            'playerUrl' => route('api.poems.player', ['poem' => $poem]),
             'generateUrl' => config('poems.public_generation')
-                ? route('api.poems.generate', ['poem' => $poem], false)
+                ? route('api.poems.generate', ['poem' => $poem])
                 : null,
             'autoplay' => (bool) config('poems.player.autoplay'),
             'background' => (string) config('poems.player.background'),

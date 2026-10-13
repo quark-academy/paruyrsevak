@@ -1,0 +1,39 @@
+# =============================================================================
+#  Laravel в подкаталоге (timeweb shared hosting)
+# -----------------------------------------------------------------------------
+#  Проект:  ~/lab.quark.am/public_html/sevak
+#  Сайт:    https://lab.quark.am/sevak
+#
+#  ВАЖНО: если имя папки отличается от "sevak", замените "sevak" в
+#  RewriteCond ниже (строка `%{DOCUMENT_ROOT}/sevak/public/$1 -f`).
+# =============================================================================
+
+# Запрет листинга каталогов
+Options -Indexes
+
+DirectoryIndex public/index.php
+
+# --- Блокировка скрытых файлов (.env, .git, .gitignore, ...) -----------------
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# --- Блокировка служебных файлов --------------------------------------------
+<FilesMatch "^(composer\.(json|lock)|artisan|phpunit\.xml|package(-lock)?\.json|vite\.config\.js|README\.md|CHANGELOG.*)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # (1) Запрос уже указывает на public/ — не вмешиваемся.
+    #     Это защита от бесконечной перезаписи и «дыры» в служебные папки.
+    RewriteRule ^public/ - [L]
+
+    # (2) Существующие файлы из public/ (build/, storage/, robots.txt, ...)
+    RewriteCond %{DOCUMENT_ROOT}/sevak/public/$1 -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # (3) Всё остальное — front controller Laravel.
+    RewriteRule ^ public/index.php [L]
+</IfModule>
