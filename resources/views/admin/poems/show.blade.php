@@ -26,6 +26,13 @@
         <div class="rounded-2xl border border-stone-200 bg-white p-5">
             <h2 class="mb-3 text-sm font-semibold">Աուդիո</h2>
 
+            @if ($poem->is_original)
+                <p class="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+                    Սա արխիվային ձայնագրություն է։ Դրանից <b>տեքստ և ժամանակացույց</b> ստանալու համար օգտագործիր
+                    «Համաժամեցնել ձայնագրությունից» կոճակը (ներքևի ԱԻ բլոկը ստեղծում է նոր ԱԻ ձայն)։
+                </p>
+            @endif
+
             @if ($poem->hasAudio())
                 <audio controls preload="metadata" src="{{ $poem->audioUrl() }}" class="mb-3 w-full"></audio>
                 <p class="mb-3 break-all text-xs text-stone-500">{{ $poem->audio_path }}</p>
@@ -84,13 +91,16 @@
                 </div>
                 @if ($poem->is_original && $poem->hasAudio())
                     <label class="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
-                        <input type="checkbox" name="replace_original" value="1" class="mt-0.5">
+                        <input type="checkbox" name="replace_original" value="1" class="mt-0.5"
+                               data-confirm-when-checked="Փոխարինե՞լ արխիվային ձայնագրությունը ԱԻ ձայնով։ Բնօրինակը կդադարի ակտիվ աուդիո լինելուց (ֆայլը մնում է սկավառակի վրա)։">
                         <span>Փոխարինել բնօրինակ (արխիվային) ձայնագրությունը ԱԻ ձայնով։ Առանց այս նշիչի ԱԻ ձայնը չի դառնա ակտիվ աուդիո։</span>
                     </label>
                 @endif
-                <p class="text-[11px] leading-relaxed text-stone-500">
-                    «Ներմուծել բառային ժամանակացույցը» նշիչը վերագրում է բառերն ու ժամանակացույցը։ Առանց նշիչի գեներացիան պարզապես կրկին կօգտագործի քեշը։
-                </p>
+                <ul class="list-inside list-disc space-y-1 text-[11px] leading-relaxed text-stone-500">
+                    <li>«Հարկադրել վերագեներացիա» — նոր ԱԻ աուդիո՝ անտեսելով քեշը (ծախսվում է ElevenLabs քվոտա)։</li>
+                    <li>«Ներմուծել բառային ժամանակացույցը» — ԱԻ աուդիոյի ժամանակացույցը կգրանցվի որպես կարաոկե բառեր (կվերագրի ընթացիկները)։</li>
+                    <li>Արխիվային ձայնագրության դեպքում այս բլոկը ոչինչ չի փոխի, քանի դեռ նշված չէ «Փոխարինել բնօրինակը»։</li>
+                </ul>
                 <button type="submit" class="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                     Գեներացնել ԱԻ ձայն
                 </button>

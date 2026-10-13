@@ -73,10 +73,13 @@ document.addEventListener('submit', (event) => {
         return;
     }
 
-    const trigger = form.querySelector('input[data-confirm-when-checked]');
-    const message = (trigger && trigger.checked)
-        ? trigger.dataset.confirmWhenChecked
-        : form.dataset.confirm;
+    const triggers = Array.from(form.querySelectorAll('input[data-confirm-when-checked]'))
+        .filter((input) => input.checked);
+    const warnings = triggers
+        .map((input) => input.dataset.confirmWhenChecked)
+        .filter(Boolean);
+
+    const message = warnings.length ? warnings.join('\n\n') : form.dataset.confirm;
 
     if (message && !window.confirm(message)) {
         event.preventDefault();

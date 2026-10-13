@@ -221,6 +221,7 @@ class PoemAlignmentTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.poems.show', $poem))
             ->assertOk()
+            ->assertSee('Սա արխիվային ձայնագրություն է', false)
             ->assertSee('Փոխարինել բնօրինակ', false)
             ->assertSee('Համաժամեցնել ձայնագրությունից', false);
 
@@ -240,6 +241,29 @@ class PoemAlignmentTest extends TestCase
             ->assertOk();
 
         $this->assertSame(0, $poem->words()->count());
+    }
+
+    public function test_force_and_sync_words_do_not_touch_an_archive_recording(): void
+    {
+        Http::fake();
+
+        $poem = $this->archivePoem();
+        $poem->words()->create(['word' => 'Մի', 'start_time' => 0.0, 'end_time' => 1.0, 'word_order' => 0]);
+
+        // Both AI checkboxes ticked, but the archive recording is not allowed
+        // to be replaced: the request must be refused as a whole.
+        $this->actingAs($this->admin())
+            ->post(route('admin.poems.audio.generate', $poem), ['force' => '1', 'sync_words' => '1'])
+            ->assertRedirect(route('admin.poems.show', $poem))
+            ->assertSessionHasErrors('audio');
+
+        Http::assertNothingSent();
+
+        $fresh = $poem->fresh();
+        $this->assertTrue($fresh->is_original);
+        $this->assertSame('original_audio/test-poem.mp3', $fresh->audio_path);
+        $this->assertSame(1, $fresh->words()->count());
+        $this->assertSame('Մի', $fresh->words()->first()->word);
     }
 
     private function admin(): User
