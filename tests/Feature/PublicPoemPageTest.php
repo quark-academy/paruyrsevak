@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\PoemController;
 use App\Models\Poem;
 use App\Support\Seo;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class PublicPoemPageTest extends TestCase
@@ -134,5 +138,23 @@ class PublicPoemPageTest extends TestCase
         $this->get('/?q='.urlencode('Կայուն').'&source[]=x')
             ->assertOk()
             ->assertSee($poem->title);
+    }
+
+    public function test_the_hero_statistics_degrade_instead_of_failing(): void
+    {
+        Poem::factory()->create();
+
+        // Break the words table: the counter statistics must fall back to
+        // zeroes (and log the failure) instead of taking the page down.
+        Schema::drop('poem_words');
+
+        $controller = new PoemController;
+
+        $stats = (new ReflectionMethod($controller, 'stats'))->invoke($controller);
+        $spotlight = (new ReflectionMethod($controller, 'spotlight'))->invoke($controller);
+
+        $this->assertSame(['poems' => 0, 'recordings' => 0, 'plays' => 0, 'words' => 0], $stats);
+        $this->assertInstanceOf(Collection::class, $spotlight);
+        $this->assertTrue($spotlight->isEmpty());
     }
 }

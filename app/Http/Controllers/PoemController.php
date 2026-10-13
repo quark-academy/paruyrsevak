@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Poem;
 use App\Models\PoemWord;
 use App\Support\Query;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Throwable;
 
 class PoemController extends Controller
 {
@@ -54,12 +56,7 @@ class PoemController extends Controller
             // Featured poems for the hero: only meaningful once listens exist.
             'spotlight' => $this->spotlight(),
             // "Start listening": the most listened recording, else the newest poem.
-            'listenPoem' => (clone $filtered)
-                ->whereNotNull('audio_path')
-                ->orderByDesc('plays_count')
-                ->orderBy('id')
-                ->first()
-                ?? Poem::query()->orderBy('id')->first(),
+            'listenPoem' => $this->listenPoem($filtered),
         ]);
     }
 
@@ -74,18 +71,47 @@ class PoemController extends Controller
     }
 
     /**
+     * Poem offered by the hero's "start listening" button.
+     */
+    protected function listenPoem(Builder $filtered): ?Poem
+    {
+        try {
+            return (clone $filtered)
+                ->whereNotNull('audio_path')
+                ->orderByDesc('plays_count')
+                ->orderBy('id')
+                ->first()
+                ?? Poem::query()->orderBy('id')->first();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    /**
      * Aggregate numbers shown in the hero of the catalogue.
+     *
+     * The counter is decoration: an unmigrated host (missing plays_count) or a
+     * broken cache must never take the whole catalogue down, so a failure is
+     * reported to the log and the page keeps rendering.
      *
      * @return array{poems: int, recordings: int, plays: int, words: int}
      */
     protected function stats(): array
     {
-        return [
-            'poems' => Poem::query()->count(),
-            'recordings' => Poem::query()->whereNotNull('audio_path')->count(),
-            'plays' => (int) Poem::query()->sum('plays_count'),
-            'words' => PoemWord::query()->count(),
-        ];
+        try {
+            return [
+                'poems' => Poem::query()->count(),
+                'recordings' => Poem::query()->whereNotNull('audio_path')->count(),
+                'plays' => (int) Poem::query()->sum('plays_count'),
+                'words' => PoemWord::query()->count(),
+            ];
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return ['poems' => 0, 'recordings' => 0, 'plays' => 0, 'words' => 0];
+        }
     }
 
     /**
@@ -95,12 +121,18 @@ class PoemController extends Controller
      */
     protected function spotlight(): Collection
     {
-        return Poem::query()
-            ->withCount('words')
-            ->where('plays_count', '>', 0)
-            ->orderByDesc('plays_count')
-            ->orderBy('id')
-            ->take(5)
-            ->get();
+        try {
+            return Poem::query()
+                ->withCount('words')
+                ->where('plays_count', '>', 0)
+                ->orderByDesc('plays_count')
+                ->orderBy('id')
+                ->take(5)
+                ->get();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return new Collection;
+        }
     }
 }
