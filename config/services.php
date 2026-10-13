@@ -70,7 +70,7 @@ return [
         'use_speaker_boost' => filter_var(env('ELEVENLABS_SPEAKER_BOOST', true), FILTER_VALIDATE_BOOL),
         // Optional speech rate (0.7 — 1.2). Not sent unless configured.
         'speed' => env('ELEVENLABS_SPEED'),
-        'disk' => env('ELEVENLABS_DISK', 'public'),
+        'disk' => env('ELEVENLABS_DISK', env('POEMS_AUDIO_DISK', 'audio')),
         'directory' => env('ELEVENLABS_DIRECTORY', 'ai_audio'),
         // Speech to text (used to build karaoke words from archive recordings).
         // Leave the language empty to let Scribe detect it, or set "hy"/"hye".

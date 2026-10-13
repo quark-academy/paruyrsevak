@@ -9,7 +9,6 @@ use App\Services\ElevenLabsService;
 use App\Support\Query;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class PoemController extends Controller
@@ -78,9 +77,7 @@ class PoemController extends Controller
 
     public function destroy(Poem $poem): RedirectResponse
     {
-        if (filled($poem->audio_path)) {
-            Storage::disk('public')->delete((string) $poem->audio_path);
-        }
+        $poem->deleteAudioFile();
 
         $this->elevenLabs->forget($poem);
         $poem->delete();

@@ -26,6 +26,7 @@ class PoemAlignmentTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        Storage::fake('audio');
 
         config()->set('services.elevenlabs.key', 'test-key');
         config()->set('services.elevenlabs.voice_id', 'voice-123');
@@ -155,7 +156,7 @@ class PoemAlignmentTest extends TestCase
 
         $this->assertFalse($fresh->is_original);
         $this->assertStringStartsWith('ai_audio/', (string) $fresh->audio_path);
-        Storage::disk('public')->assertExists($fresh->audio_path);
+        Storage::disk('audio')->assertExists($fresh->audio_path);
     }
 
     public function test_ai_generation_requires_a_real_text(): void
@@ -277,7 +278,7 @@ class PoemAlignmentTest extends TestCase
      */
     private function archivePoem(bool $placeholder = false): Poem
     {
-        Storage::disk('public')->put('original_audio/test-poem.mp3', 'MP3-DATA');
+        Storage::disk('audio')->put('original_audio/test-poem.mp3', 'MP3-DATA');
 
         return Poem::factory()->create([
             'title' => 'Թեստային բանաստեղծություն',

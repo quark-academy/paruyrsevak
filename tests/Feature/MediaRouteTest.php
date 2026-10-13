@@ -17,12 +17,25 @@ class MediaRouteTest extends TestCase
     public function test_it_streams_an_existing_public_file(): void
     {
         Storage::fake('public');
-        Storage::disk('public')->put('ai_audio/demo.mp3', 'MP3-BYTES');
+        Storage::disk('public')->put('images/cover.txt', 'PLAIN-BYTES');
 
-        $response = $this->get('/storage/ai_audio/demo.mp3');
+        $response = $this->get('/storage/images/cover.txt');
 
         $response->assertOk();
-        $this->assertSame('MP3-BYTES', $response->streamedContent());
+        $this->assertSame('PLAIN-BYTES', $response->streamedContent());
+    }
+
+    public function test_it_never_serves_recordings(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('ai_audio/demo.mp3', 'MP3-BYTES');
+        Storage::disk('public')->put('original_audio/archive.mp3', 'MP3-BYTES');
+        Storage::disk('public')->put('misc/clip.wav', 'WAV-BYTES');
+
+        // Recordings only leave the server through the signed "poems.audio" route.
+        $this->get('/storage/ai_audio/demo.mp3')->assertNotFound();
+        $this->get('/storage/original_audio/archive.mp3')->assertNotFound();
+        $this->get('/storage/misc/clip.wav')->assertNotFound();
     }
 
     public function test_it_returns_404_for_a_missing_file(): void

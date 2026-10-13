@@ -35,7 +35,7 @@
             @endif
 
             @if ($poem->hasAudio())
-                <audio controls preload="metadata" src="{{ $poem->audioUrl() }}" class="mb-3 w-full"></audio>
+                <audio controls controlsList="nodownload noremoteplayback" disablepictureinpicture preload="metadata" src="{{ $poem->audioUrl() }}" class="mb-3 w-full"></audio>
                 <p class="mb-3 break-all text-xs text-stone-500">{{ $poem->audio_path }}</p>
             @else
                 <p class="mb-3 rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-2 text-xs text-stone-500">

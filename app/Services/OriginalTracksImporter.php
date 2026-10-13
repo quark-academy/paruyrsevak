@@ -22,12 +22,19 @@ use Illuminate\Support\Str;
  */
 class OriginalTracksImporter
 {
-    public const DISK = 'public';
-
     public const DIRECTORY = 'original_audio';
 
     /** Extensions considered audio. */
     protected const EXTENSIONS = ['mp3', 'm4a', 'aac', 'ogg', 'wav', 'opus'];
+
+    /**
+     * Disk the recordings are copied to: outside the web root, streamed only
+     * through the signed "poems.audio" route.
+     */
+    public static function disk(): string
+    {
+        return (string) config('poems.audio.disk', 'audio');
+    }
 
     /**
      * @param  array<string, string>  $titleOverrides  file name => custom title
@@ -51,7 +58,7 @@ class OriginalTracksImporter
             ];
         }
 
-        $disk = Storage::disk(static::DISK);
+        $disk = Storage::disk(static::disk());
         $disk->makeDirectory(static::DIRECTORY);
 
         $report = [

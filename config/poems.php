@@ -57,6 +57,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Recordings (audio protection)
+    |--------------------------------------------------------------------------
+    |
+    | The .mp3 files are stored outside the web root and are only streamed
+    | through a signed route that expires: URLs can neither be downloaded as
+    | plain files nor hotlinked from another site. "url_ttl" is how long a
+    | player URL stays valid; "bind_user_agent" ties it to the browser that
+    | rendered the page, so a copied link stops working elsewhere.
+    |
+    */
+
+    'audio' => [
+        'disk' => env('POEMS_AUDIO_DISK', 'audio'),
+        'url_ttl' => (int) env('POEMS_AUDIO_URL_TTL', 21600),
+        'bind_user_agent' => filter_var(env('POEMS_AUDIO_BIND_UA', true), FILTER_VALIDATE_BOOL),
+        'check_origin' => filter_var(env('POEMS_AUDIO_CHECK_ORIGIN', true), FILTER_VALIDATE_BOOL),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Shorts player defaults
     |--------------------------------------------------------------------------
     |

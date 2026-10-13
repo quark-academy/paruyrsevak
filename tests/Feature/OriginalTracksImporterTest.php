@@ -22,6 +22,7 @@ class OriginalTracksImporterTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        Storage::fake('audio');
 
         $this->tracks = storage_path('framework/testing/tracks');
         $this->lyrics = storage_path('framework/testing/lyrics');
@@ -54,7 +55,7 @@ class OriginalTracksImporterTest extends TestCase
         $this->assertTrue($poem->is_original);
         $this->assertStringStartsWith('original_audio/', (string) $poem->audio_path);
         $this->assertStringEndsWith('.mp3', (string) $poem->audio_path);
-        Storage::disk('public')->assertExists($poem->audio_path);
+        Storage::disk('audio')->assertExists($poem->audio_path);
 
         // Trailing space in the file name is trimmed.
         $this->assertDatabaseHas('poems', ['title' => 'Անակնկալ հայտնագործություն']);

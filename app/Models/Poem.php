@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class Poem extends Model
@@ -111,22 +112,102 @@ class Poem extends Model
     }
 
     /**
-     * Determine whether an audio file is available on disk.
+     * Disk that holds the recordings (outside the web root by default).
      */
-    public function hasAudio(): bool
+    public function audioDisk(): string
     {
-        return filled($this->audio_path)
-            && Storage::disk('public')->exists((string) $this->audio_path);
+        return (string) config('poems.audio.disk', 'audio');
     }
 
     /**
-     * Public URL of the active audio (archive recording or AI voice).
+     * Determine whether an audio file is available on disk.
+     *
+     * The private disk is authoritative; the legacy "public" location is still
+     * accepted so recordings copied before the hardening keep playing.
+     */
+    public function hasAudio(): bool
+    {
+        return $this->audioFilePath() !== null;
+    }
+
+    /**
+     * Absolute path of the active recording, or null when the file is missing.
+     */
+    public function audioFilePath(): ?string
+    {
+        if (blank($this->audio_path)) {
+            return null;
+        }
+
+        $path = (string) $this->audio_path;
+
+        foreach (array_unique([$this->audioDisk(), 'public']) as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return Storage::disk($disk)->path($path);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Remove the recording from every disk it may live on (private + legacy).
+     */
+    public function deleteAudioFile(): void
+    {
+        if (blank($this->audio_path)) {
+            return;
+        }
+
+        foreach (array_unique(['public', $this->audioDisk()]) as $disk) {
+            if (Storage::disk($disk)->exists((string) $this->audio_path)) {
+                Storage::disk($disk)->delete((string) $this->audio_path);
+            }
+        }
+    }
+
+    /**
+     * Signed, expiring URL of the streaming route.
+     *
+     * The file itself is never exposed: this URL dies after
+     * "poems.audio.url_ttl" seconds and (when enabled) only works in the
+     * browser that rendered the page, so copying it elsewhere is useless.
      */
     public function audioUrl(): ?string
     {
-        return filled($this->audio_path)
-            ? Storage::disk('public')->url((string) $this->audio_path)
-            : null;
+        if (blank($this->getRouteKey()) || $this->audioFilePath() === null) {
+            return null;
+        }
+
+        return URL::temporarySignedRoute(
+            'poems.audio',
+            now()->addSeconds(max(60, (int) config('poems.audio.url_ttl', 21600))),
+            ['poem' => $this->getRouteKey()] + $this->audioSignatureParams(),
+        );
+    }
+
+    /**
+     * Extra parameters covered by the audio URL signature.
+     *
+     * @return array<string, string>
+     */
+    public function audioSignatureParams(): array
+    {
+        if (! config('poems.audio.bind_user_agent', true)) {
+            return [];
+        }
+
+        return ['u' => static::visitorHash()];
+    }
+
+    /**
+     * Stable, non-reversible hash of the browser that asks for the stream.
+     */
+    public static function visitorHash(?string $userAgent = null): string
+    {
+        $userAgent ??= (string) request()->userAgent();
+
+        return substr(hash_hmac('sha256', $userAgent, (string) config('app.key')), 0, 16);
     }
 
     /**

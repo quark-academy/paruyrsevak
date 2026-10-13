@@ -38,7 +38,7 @@
 
     @if ($poem->hasAudio())
         <div class="mb-5 sticky top-0 z-20 rounded-2xl border border-stone-200 bg-white/95 p-4 backdrop-blur">
-            <audio id="player" controls preload="metadata" src="{{ $poem->audioUrl() }}" class="w-full"></audio>
+            <audio id="player" controls controlsList="nodownload noremoteplayback" disablepictureinpicture preload="metadata" src="{{ $poem->audioUrl() }}" class="w-full"></audio>
             <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-stone-600">
                 <span>Ընթացիկ ժամանակ՝ <b id="now" class="tabular-nums">0.00</b> վրկ</span>
                 <span class="text-stone-400">Խորհուրդ՝ հետևիր տեքստին և ընթերցման պահին սեղմիր «S» / «E»։</span>

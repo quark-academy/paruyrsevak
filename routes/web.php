@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\PoemAudioStreamController;
 use App\Http\Controllers\PoemController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,11 @@ Route::get('/', [PoemController::class, 'index'])->name('home');
 
 Route::get('/poems', [PoemController::class, 'index'])->name('poems.index');
 Route::get('/poems/{poem}', [PoemController::class, 'show'])->name('poems.show');
+
+// Recordings: signed + expiring, the files themselves are outside the web root.
+Route::get('/audio/{poem}', PoemAudioStreamController::class)
+    ->middleware('throttle:240,1')
+    ->name('poems.audio');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 

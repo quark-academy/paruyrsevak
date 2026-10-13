@@ -29,15 +29,15 @@ class PoemAudioController extends Controller
         $extension = strtolower($file->getClientOriginalExtension() ?: 'mp3');
         $relativePath = 'original_audio/'.$poem->slug.'-'.now()->format('YmdHis').'.'.$extension;
 
-        Storage::disk('public')->putFileAs(
+        Storage::disk($poem->audioDisk())->putFileAs(
             'original_audio',
             $file,
             basename($relativePath),
-            ['visibility' => 'public']
+            ['visibility' => 'private']
         );
 
-        if (filled($poem->audio_path) && Storage::disk('public')->exists((string) $poem->audio_path)) {
-            Storage::disk('public')->delete((string) $poem->audio_path);
+        if ($poem->audio_path !== $relativePath) {
+            $poem->deleteAudioFile();
         }
 
         $poem->update([
@@ -104,9 +104,7 @@ class PoemAudioController extends Controller
      */
     public function destroy(Poem $poem): RedirectResponse
     {
-        if (filled($poem->audio_path) && Storage::disk('public')->exists((string) $poem->audio_path)) {
-            Storage::disk('public')->delete((string) $poem->audio_path);
-        }
+        $poem->deleteAudioFile();
 
         $poem->update(['audio_path' => null, 'is_original' => false]);
 

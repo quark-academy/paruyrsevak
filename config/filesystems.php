@@ -50,6 +50,23 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Recordings live OUTSIDE the web root on purpose.
+         *
+         * They are streamed through the signed, expiring route "poems.audio"
+         * (see PoemAudioStreamController), so the files are never reachable as
+         * plain /storage/... URLs and cannot be downloaded or hotlinked.
+         * Keep this disk unlinked: never run "storage:link" for it.
+         */
+        'audio' => [
+            'driver' => 'local',
+            'root' => storage_path('app/audio'),
+            // Never let Laravel register a public "storage/{path}" route.
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

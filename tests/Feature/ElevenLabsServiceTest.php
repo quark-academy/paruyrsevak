@@ -20,6 +20,7 @@ class ElevenLabsServiceTest extends TestCase
         config()->set('services.elevenlabs.with_timestamps', true);
 
         Storage::fake('public');
+        Storage::fake('audio');
 
         $content = 'Հելո Աշխարհ';
         $audio = 'FAKE-MP3-BYTES';
@@ -59,8 +60,8 @@ class ElevenLabsServiceTest extends TestCase
         $this->assertCount(2, $first['words']);
         $this->assertSame('Հելո', $first['words'][0]['word']);
         $this->assertSame('Աշխարհ', $first['words'][1]['word']);
-        Storage::disk('public')->assertExists($first['path']);
-        $this->assertSame($audio, Storage::disk('public')->get($first['path']));
+        Storage::disk('audio')->assertExists($first['path']);
+        $this->assertSame($audio, Storage::disk('audio')->get($first['path']));
         Http::assertSentCount(1);
 
         $second = $service->generateAudioForPoem($poem);
