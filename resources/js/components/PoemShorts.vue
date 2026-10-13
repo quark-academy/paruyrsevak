@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import KaraokeLyrics from './KaraokeLyrics.vue';
 import PlayerControls from './PlayerControls.vue';
+import PlayerOnboarding from './PlayerOnboarding.vue';
 import PlayerPrefs from './PlayerPrefs.vue';
 import SevakSilhouette from './SevakSilhouette.vue';
 import { useAudioPlayer } from '../composables/useAudioPlayer';
@@ -51,10 +52,34 @@ const {
 } = useAudioPlayer();
 
 /**
- * Player preferences (autoplay / repeat / shuffle) survive navigation between
- * poems through localStorage, so "autoplay + shuffle" behaves like a stream.
+ * Player preferences: autoplay plus one playback mode (sequential / repeat /
+ * random). They survive navigation between poems through localStorage, so
+ * "autoplay + shuffle" behaves like a stream.
  */
-const { autoplay, loop: prefLoop, shuffle, toggle: togglePref } = usePlayerPrefs(source.prefs ?? {});
+const {
+    autoplay,
+    mode,
+    seenIntro,
+    repeat: prefLoop,
+    shuffle,
+    setMode,
+    toggleAutoplay,
+    markIntroSeen,
+} = usePlayerPrefs(source.prefs ?? {});
+
+/** First visit: a short, premium looking walkthrough (remembered in the browser). */
+const showIntro = ref(!seenIntro.value);
+
+function finishIntro() {
+    showIntro.value = false;
+    markIntroSeen();
+
+    // The tap that closes the walkthrough is a user gesture: start playing.
+    if (state.value === 'ready') {
+        autoplayTried = true;
+        play();
+    }
+}
 
 const lines = computed(() => linesData.value);
 const words = computed(() => lines.value.flat());
@@ -294,9 +319,9 @@ function onKeydown(event) {
     } else if (event.code === 'ArrowUp') {
         go(source.prev?.url);
     } else if (event.code === 'KeyL') {
-        togglePref('loop');
+        setMode(prefLoop.value ? 'sequential' : 'loop');
     } else if (event.code === 'KeyS') {
-        togglePref('shuffle');
+        setMode(shuffle.value ? 'sequential' : 'shuffle');
     } else if (event.code === 'Space' && state.value === 'ready') {
         event.preventDefault();
         toggle();
@@ -328,7 +353,7 @@ watch(ready, (isReady) => {
     }
 });
 
-// The recording ended: repeat it (loop) or keep the stream going.
+// The recording ended: repeat it (loop mode) or keep the stream going.
 watch(endedAt, () => {
     if (prefLoop.value || !autoplay.value) {
         return;
@@ -423,20 +448,6 @@ onBeforeUnmount(() => {
                 />
             </div>
 
-            <!-- Audible autoplay needs a gesture: ask for one tap. -->
-            <button
-                v-if="autoplayBlocked"
-                type="button"
-                class="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl border border-amber-300/30 bg-black/60 px-6 py-5 text-center backdrop-blur"
-                @click="play"
-            >
-                <span
-                    class="grid h-14 w-14 animate-pulse place-items-center rounded-full text-xl font-bold text-stone-900"
-                    :style="{ backgroundColor: gold }"
-                >▶</span>
-                <span class="text-[11px] text-white/75">Սեղմիր՝ լսելը սկսելու համար</span>
-            </button>
-
             <div class="absolute bottom-1 left-1/2 -translate-x-1/2">
                 <span
                     class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[11px] backdrop-blur"
@@ -489,23 +500,25 @@ onBeforeUnmount(() => {
                 :rate="rate"
                 :muted="muted"
                 :disabled="state !== 'ready'"
+                :attention="autoplayBlocked"
                 @toggle="toggle"
                 @seek="seekRatio"
                 @rate="setRate"
                 @mute="toggleMute"
             />
 
-            <!-- autoplay / repeat / shuffle: remembered between poems -->
+            <!-- autoplay + playback mode: remembered between poems -->
             <div class="mt-2.5">
                 <PlayerPrefs
                     :autoplay="autoplay"
-                    :loop="prefLoop"
-                    :shuffle="shuffle"
-                    @toggle="togglePref"
+                    :mode="mode"
+                    @autoplay="toggleAutoplay"
+                    @mode="setMode"
                 />
             </div>
 
-            <div class="mt-2 flex items-center justify-between gap-2 text-[10px] text-white/30">
+            <!-- Desktop only: the mobile player stays clean (see the walkthrough). -->
+            <div class="mt-2 hidden items-center justify-between gap-2 text-[10px] text-white/30 sm:flex">
                 <a :href="source.readingUrl" class="shrink-0 underline-offset-2 hover:text-white/60 hover:underline">
                     Ամբողջ տեքստը
                 </a>
@@ -549,6 +562,9 @@ onBeforeUnmount(() => {
                 {{ shareNotice }}
             </div>
         </transition>
+
+        <!-- First visit: a short walkthrough (shown once per browser). -->
+        <PlayerOnboarding v-if="showIntro" :gold="gold" @done="finishIntro" />
     </div>
 </template>
 

@@ -62,8 +62,7 @@ class PoemPlayerPayload
             // choice lives in the browser (localStorage) and wins on load.
             'prefs' => [
                 'autoplay' => (bool) config('poems.player.autoplay'),
-                'loop' => false,
-                'shuffle' => false,
+                'mode' => 'sequential',
             ],
             'autoplay' => (bool) config('poems.player.autoplay'),
             'background' => (string) config('poems.player.background'),

@@ -8,6 +8,8 @@ const props = defineProps({
     rate: { type: Number, default: 1 },
     muted: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    /** Autoplay was refused by the browser: ask for a tap by pulsing the play button. */
+    attention: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['toggle', 'seek', 'rate', 'mute']);
@@ -84,6 +86,7 @@ function cycleRate() {
                     type="button"
                     :disabled="disabled"
                     class="grid h-14 w-14 place-items-center rounded-full bg-amber-300 text-xl font-bold text-stone-900 shadow-lg shadow-amber-300/20 transition active:scale-95 disabled:opacity-40"
+                    :class="{ 'ring-4 ring-amber-300/40 animate-pulse': attention && !playing }"
                     :aria-label="playing ? 'Կանգնեցնել' : 'Նվագարկել'"
                     @click="emit('toggle')"
                 >

@@ -181,10 +181,11 @@
             });
         })();
 
-        // Autoplay shares the preference with the Shorts player (localStorage):
-        // the visitor decides once whether a recording starts by itself.
+        // Autoplay + repeat preferences are shared with the Shorts player
+        // (localStorage): the visitor decides once how the poems behave.
         (function () {
             let autoplay = true;
+            let mode = 'sequential';
 
             try {
                 const stored = JSON.parse(window.localStorage.getItem('sevak:player-prefs') || '{}') || {};
@@ -192,13 +193,21 @@
                 if (typeof stored.autoplay === 'boolean') {
                     autoplay = stored.autoplay;
                 }
+
+                if (typeof stored.mode === 'string') {
+                    mode = stored.mode;
+                }
             } catch (error) {
-                // Unreadable storage: keep the default.
+                // Unreadable storage: keep the defaults.
             }
 
             const audio = document.getElementById('poem-audio');
 
-            if (!audio || !autoplay) return;
+            if (!audio) return;
+
+            audio.loop = mode === 'loop';
+
+            if (!autoplay) return;
 
             // Browsers may refuse audible autoplay without a gesture — the
             // visitor can always press play, so a failure is fine here.

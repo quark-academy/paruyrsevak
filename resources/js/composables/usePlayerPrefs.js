@@ -1,15 +1,34 @@
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 /**
  * Where the visitor's player choices live.
  *
  * Keeping them in localStorage means "autoplay + shuffle" survives navigation
  * between poems: every newly opened poem keeps playing without another tap.
- * The same key is read by the reading page player (see poems/show.blade.php).
  */
 export const PREFS_STORAGE_KEY = 'sevak:player-prefs';
 
-const PREF_KEYS = ['autoplay', 'loop', 'shuffle'];
+/**
+ * What happens when a recording ends — exactly one mode is active at a time.
+ *
+ * sequential: continue with the next poem in order
+ * loop:       repeat the same recording
+ * shuffle:    continue with a random poem
+ */
+export const MODES = ['sequential', 'loop', 'shuffle'];
+
+/** Preferences stored by older versions (two independent switches). */
+function migratedMode(stored) {
+    if (stored.loop === true) {
+        return 'loop';
+    }
+
+    if (stored.shuffle === true) {
+        return 'shuffle';
+    }
+
+    return 'sequential';
+}
 
 function readStored() {
     try {
@@ -31,42 +50,49 @@ function persist(preferences) {
 }
 
 /**
- * @param {{autoplay?: boolean, loop?: boolean, shuffle?: boolean}} defaults
+ * @param {{autoplay?: boolean, mode?: string}} defaults
  */
 export function usePlayerPrefs(defaults = {}) {
     const stored = readStored();
 
-    const state = {};
+    const autoplay = ref(typeof stored.autoplay === 'boolean' ? stored.autoplay : Boolean(defaults.autoplay));
+    const mode = ref(MODES.includes(stored.mode) ? stored.mode : (MODES.includes(defaults.mode) ? defaults.mode : migratedMode(stored)));
+    const seenIntro = ref(typeof stored.seenIntro === 'boolean' ? stored.seenIntro : false);
 
-    PREF_KEYS.forEach((key) => {
-        state[key] = ref(typeof stored[key] === 'boolean' ? stored[key] : Boolean(defaults[key]));
-    });
-
-    watch([state.autoplay, state.loop, state.shuffle], () => {
+    watch([autoplay, mode, seenIntro], () => {
         persist({
-            autoplay: state.autoplay.value,
-            loop: state.loop.value,
-            shuffle: state.shuffle.value,
+            autoplay: autoplay.value,
+            mode: mode.value,
+            seenIntro: seenIntro.value,
         });
     });
 
-    function set(key, value) {
-        if (state[key]) {
-            state[key].value = Boolean(value);
+    const repeat = computed(() => mode.value === 'loop');
+    const shuffle = computed(() => mode.value === 'shuffle');
+
+    function setMode(value) {
+        if (MODES.includes(value)) {
+            mode.value = value;
         }
     }
 
-    function toggle(key) {
-        if (state[key]) {
-            state[key].value = !state[key].value;
-        }
+    function toggleAutoplay() {
+        autoplay.value = !autoplay.value;
+    }
+
+    function markIntroSeen() {
+        seenIntro.value = true;
     }
 
     return {
-        autoplay: state.autoplay,
-        loop: state.loop,
-        shuffle: state.shuffle,
-        set,
-        toggle,
+        autoplay,
+        mode,
+        seenIntro,
+        repeat,
+        shuffle,
+        setMode,
+        toggleAutoplay,
+        markIntroSeen,
     };
 }
+
