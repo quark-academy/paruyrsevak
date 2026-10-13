@@ -80,4 +80,69 @@ class NormalizeBasePathTest extends TestCase
         $this->assertSame('/index.php', $request->server->get('SCRIPT_NAME'));
         $this->assertSame('/demo-ashun', $request->getPathInfo());
     }
+
+    public function test_base_path_is_recovered_when_app_url_has_no_path(): void
+    {
+        // A forgotten "/sevak" suffix in APP_URL (or a config cache built
+        // before it was fixed) must not turn the home page into the catch-all
+        // poem page for the slug "sevak".
+        config()->set('app.url', 'https://lab.quark.am');
+
+        $request = Request::create('https://lab.quark.am/sevak', 'GET');
+        $request->server->set('SCRIPT_NAME', '/sevak/public/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/home/user/lab.quark.am/sevak/public/index.php');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/sevak', $request->getBaseUrl());
+        $this->assertSame('/', $request->getPathInfo());
+        $this->assertSame('home', app('router')->getRoutes()->match($request)->getName());
+    }
+
+    public function test_the_home_page_survives_the_trailing_slash_redirect(): void
+    {
+        // "public/.htaccess" sends "/sevak/" to "/sevak" (301). Without the
+        // trailing slash Symfony cannot derive the base URL, so the router used
+        // to see the segment "sevak" and the catch-all "/{poem}" answered with
+        // the poem of that slug.
+        $request = $this->handle($this->subdirectoryRequest('/sevak'));
+
+        $this->assertSame('/sevak', $request->getBaseUrl());
+        $this->assertSame('/', $request->getPathInfo());
+        $this->assertSame('home', app('router')->getRoutes()->match($request)->getName());
+    }
+
+    public function test_the_redirect_keeps_the_query_string(): void
+    {
+        $request = $this->handle($this->subdirectoryRequest('/sevak?source=original'));
+
+        $this->assertSame('/sevak/?source=original', $request->server->get('REQUEST_URI'));
+        $this->assertSame('/', $request->getPathInfo());
+        $this->assertSame('original', $request->query('source'));
+    }
+
+    public function test_page_requests_are_never_rewritten(): void
+    {
+        $request = $this->handle($this->subdirectoryRequest('/sevak/poems?q=sevak'));
+
+        $this->assertSame('/sevak/poems?q=sevak', $request->server->get('REQUEST_URI'));
+        $this->assertSame('/poems', $request->getPathInfo());
+        $this->assertSame('poems.index', app('router')->getRoutes()->match($request)->getName());
+    }
+
+    public function test_unrelated_requests_keep_their_path(): void
+    {
+        // A root deployment: nothing to normalise at all.
+        config()->set('app.url', 'https://example.am');
+
+        $request = Request::create('https://example.am/demo-ashun', 'GET');
+        $request->server->set('SCRIPT_NAME', '/index.php');
+        $request->server->set('SCRIPT_FILENAME', '/var/www/example.am/public/index.php');
+
+        $request = $this->handle($request);
+
+        $this->assertSame('/index.php', $request->server->get('SCRIPT_NAME'));
+        $this->assertSame('', $request->getBaseUrl());
+        $this->assertSame('/demo-ashun', $request->getPathInfo());
+    }
 }

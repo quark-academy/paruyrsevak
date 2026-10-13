@@ -28,13 +28,90 @@ class NormalizeBasePath
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $basePath = rtrim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+        $basePath = $this->basePath($request);
 
-        if ($basePath !== '') {
-            $request->server->set('SCRIPT_NAME', $basePath.'/index.php');
-            $request->server->set('PHP_SELF', $basePath.'/index.php');
+        if ($basePath === '') {
+            return $next($request);
         }
 
+        $request->server->set('SCRIPT_NAME', $basePath.'/index.php');
+        $request->server->set('PHP_SELF', $basePath.'/index.php');
+
+        $this->normalizeBareBasePath($request, $basePath);
+
         return $next($request);
+    }
+
+    /**
+     * A request for the bare base path ("/sevak", no trailing slash) cannot be
+     * matched against the script directory, so Symfony drops the base URL and
+     * the router sees "/sevak" as a route segment — the catch-all "/{poem}"
+     * then answered the home page with the poem whose slug is "sevak".
+     *
+     * The standard Laravel "public/.htaccess" redirects "/sevak/" to "/sevak"
+     * (301), so this is exactly what a visitor typing the site address hits.
+     * Treating it as the directory request ("/sevak/") restores the home page.
+     */
+    protected function normalizeBareBasePath(Request $request, string $basePath): void
+    {
+        $uri = (string) $request->server->get('REQUEST_URI', '');
+
+        [$path, $query] = array_pad(explode('?', $uri, 2), 2, '');
+
+        if (rtrim($path, '/') !== $basePath) {
+            return;
+        }
+
+        $request->server->set('REQUEST_URI', $basePath.'/'.($query !== '' ? '?'.$query : ''));
+    }
+
+    /**
+     * Subdirectory the application is served from.
+     *
+     * APP_URL wins ("https://host/sevak" -> "/sevak"). When it carries no path
+     * (a forgotten suffix, or a config cache built before the URL was fixed)
+     * the front controller location reported by the web server is used as a
+     * fallback, so a wrong APP_URL degrades to working routing instead of a
+     * home page that opens some poem.
+     */
+    protected function basePath(Request $request): string
+    {
+        $configured = rtrim((string) parse_url((string) config('app.url'), PHP_URL_PATH), '/');
+
+        return $configured !== '' ? $configured : $this->detectBasePath($request);
+    }
+
+    /**
+     * Derive the base path from the script location reported by the web server.
+     */
+    protected function detectBasePath(Request $request): string
+    {
+        $uri = (string) strtok((string) $request->server->get('REQUEST_URI', ''), '?');
+
+        foreach (['SCRIPT_NAME', 'PHP_SELF', 'ORIG_SCRIPT_NAME'] as $key) {
+            $script = (string) $request->server->get($key, '');
+
+            if ($script === '') {
+                continue;
+            }
+
+            $directory = rtrim(str_replace('\\', '/', dirname($script)), '/');
+
+            // ".../sevak/public/index.php" (docroot symlinked to public/).
+            if (str_ends_with($directory, '/public')) {
+                $directory = substr($directory, 0, -7);
+            }
+
+            if ($directory === '' || $directory === '.') {
+                continue;
+            }
+
+            // Trust only a path that the request itself starts with.
+            if ($uri === $directory || str_starts_with($uri, $directory.'/')) {
+                return $directory;
+            }
+        }
+
+        return '';
     }
 }
