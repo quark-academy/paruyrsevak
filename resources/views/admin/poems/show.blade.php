@@ -16,7 +16,7 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2 text-sm">
-            <a href="{{ route('poems.show', $poem) }}" target="_blank" class="rounded-lg bg-stone-200 px-3 py-2 hover:bg-stone-300">Կայք ↗</a>
+            <a href="{{ route('poems.show', ['poem' => $poem]) }}" target="_blank" class="rounded-lg bg-stone-200 px-3 py-2 hover:bg-stone-300">Կայք ↗</a>
             <a href="{{ route('admin.poems.timings', $poem) }}" class="rounded-lg bg-stone-200 px-3 py-2 hover:bg-stone-300">Ժամանակացույց</a>
             <a href="{{ route('admin.poems.edit', $poem) }}" class="rounded-lg bg-stone-900 px-3 py-2 font-medium text-white hover:bg-stone-800">Խմբագրել</a>
         </div>

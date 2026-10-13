@@ -55,6 +55,33 @@ class AdminPanelTest extends TestCase
         $this->assertDatabaseHas('poems', ['title' => 'Աշուն']);
     }
 
+    public function test_admin_pages_render_without_errors(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու երեք']);
+        $poem->words()->create(['word' => 'Մեկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.poems.index'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.poems.create'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.poems.show', $poem))->assertOk();
+        $this->actingAs($admin)->get(route('admin.poems.edit', $poem))->assertOk();
+        $this->actingAs($admin)->get(route('admin.poems.timings', $poem))->assertOk();
+    }
+
+    public function test_public_pages_render_without_errors(): void
+    {
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու երեք']);
+        $poem->words()->create(['word' => 'Մեկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+
+        $this->get('/')->assertOk();
+        $this->get(route('poems.index'))->assertOk();
+        $this->get(route('poems.show', $poem))->assertOk();
+        $this->get(route('poems.short', $poem))->assertOk();
+        $this->get(route('sitemap'))->assertOk();
+        $this->getJson(route('api.poems.player', $poem))->assertOk();
+    }
+
     public function test_admin_can_store_word_timings(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
