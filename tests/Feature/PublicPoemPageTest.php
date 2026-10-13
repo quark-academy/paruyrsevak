@@ -30,11 +30,21 @@ class PublicPoemPageTest extends TestCase
 
     public function test_sitemap_is_valid_xml(): void
     {
-        Poem::factory()->create();
+        $poem = Poem::factory()->create(['slug' => 'sitemap-poem']);
 
         $response = $this->get('/sitemap.xml')->assertOk();
 
-        $this->assertStringContainsString('<urlset', $response->getContent());
+        $content = (string) $response->getContent();
+
+        // The XML declaration must exist exactly once and at the very start.
+        // It is added by the controller because "<?xml" inside a Blade view
+        // breaks compilation when short_open_tag=On.
+        $this->assertStringStartsWith('<?xml version="1.0" encoding="UTF-8"?>', $content);
+        $this->assertSame(1, substr_count($content, '<?xml'));
+        $this->assertStringContainsString('<urlset', $content);
+        $this->assertStringContainsString('sitemap-poem', $content);
+
+        $this->assertNotFalse(@simplexml_load_string($content));
     }
 
     public function test_search_filters_poems(): void

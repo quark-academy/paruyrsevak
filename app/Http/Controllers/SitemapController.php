@@ -12,8 +12,13 @@ class SitemapController extends Controller
     {
         $poems = Poem::query()->latest('updated_at')->get();
 
-        return response()
-            ->view('sitemap', ['poems' => $poems])
+        // The XML declaration is added here (not in the Blade view) on purpose:
+        // a literal "<?xml" inside a Blade template breaks compilation when the
+        // host has short_open_tag=On (Blade uses token_get_all()).
+        $content = '<?xml version="1.0" encoding="UTF-8"?>'."\n"
+            .view('sitemap', ['poems' => $poems])->render();
+
+        return response($content)
             ->header('Content-Type', 'application/xml; charset=UTF-8');
     }
 }
