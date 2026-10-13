@@ -124,10 +124,11 @@ class ElevenLabsService
 
         $withTimestamps = (bool) ($options['with_timestamps'] ?? config('services.elevenlabs.with_timestamps', true));
         $outputFormat = (string) ($options['output_format'] ?? config('services.elevenlabs.output_format', 'mp3_44100_128'));
+        $model = (string) ($options['model'] ?? config('services.elevenlabs.model', 'eleven_multilingual_v2'));
 
         $payload = [
             'text' => trim($text),
-            'model_id' => (string) ($options['model'] ?? config('services.elevenlabs.model', 'eleven_multilingual_v2')),
+            'model_id' => $model,
             'voice_settings' => [
                 'stability' => (float) ($options['stability'] ?? config('services.elevenlabs.stability', 0.5)),
                 'similarity_boost' => (float) ($options['similarity_boost'] ?? config('services.elevenlabs.similarity_boost', 0.75)),
@@ -137,7 +138,11 @@ class ElevenLabsService
         ];
 
         $language = $options['language'] ?? config('services.elevenlabs.language');
-        if (filled($language)) {
+
+        // eleven_multilingual_v2 detects the language on its own and rejects
+        // language_code ("does not support language_code"), so only send it for
+        // models that actually accept it (turbo / flash).
+        if (filled($language) && ! str_contains($model, 'multilingual')) {
             $payload['language_code'] = (string) $language;
         }
 
@@ -315,10 +320,10 @@ class ElevenLabsService
             'proxy' => config('services.elevenlabs.proxy') ?: null,
         ]);
 
-        // HTTP/2 is less likely to be challenged by Cloudflare than HTTP/1.1.
-        if (defined('CURL_HTTP_VERSION_2_0')) {
-            $options['version'] = CURL_HTTP_VERSION_2_0;
-        }
+        // NB: do not set the "version" option here. Guzzle expects a string
+        // ("2.0"), while CURL_HTTP_VERSION_2_0 === 3, which Guzzle interprets as
+        // HTTP/3 and fails with "HTTP/3 is not supported by the cURL handler".
+        // libcurl negotiates HTTP/2 over TLS via ALPN on its own.
 
         return Http::withHeaders([
             'xi-api-key' => (string) $this->apiKey,

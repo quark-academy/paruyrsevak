@@ -52,7 +52,9 @@ return [
         'voice_id' => env('ELEVENLABS_VOICE_ID'),
         'model' => env('ELEVENLABS_MODEL', 'eleven_multilingual_v2'),
         'output_format' => env('ELEVENLABS_OUTPUT_FORMAT', 'mp3_44100_128'),
-        'language' => env('ELEVENLABS_LANGUAGE', 'hy'),
+        // Optional. Leave EMPTY for eleven_multilingual_v2 (it auto-detects the
+        // language and rejects language_code). Set "hy" for turbo/flash models.
+        'language' => env('ELEVENLABS_LANGUAGE'),
         'with_timestamps' => filter_var(env('ELEVENLABS_WITH_TIMESTAMPS', true), FILTER_VALIDATE_BOOL),
         'timeout' => (int) env('ELEVENLABS_TIMEOUT', 180),
         // Cloudflare in front of ElevenLabs rejects requests without a

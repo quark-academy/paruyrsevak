@@ -82,6 +82,35 @@ class ElevenLabsServiceTest extends TestCase
         $this->assertEqualsWithDelta(3.0, $words[2]['end'], 0.001);
     }
 
+    public function test_language_code_is_not_sent_for_the_multilingual_model(): void
+    {
+        config()->set('services.elevenlabs.key', 'test-key');
+        config()->set('services.elevenlabs.voice_id', 'voice-1');
+        config()->set('services.elevenlabs.model', 'eleven_multilingual_v2');
+        config()->set('services.elevenlabs.language', 'hy');
+
+        Http::fake(['api.elevenlabs.io/*' => Http::response(['audio_base64' => base64_encode('audio')], 200)]);
+
+        app(ElevenLabsService::class)->synthesize('Սևակ');
+
+        Http::assertSent(fn ($request): bool => $request['model_id'] === 'eleven_multilingual_v2'
+            && ! array_key_exists('language_code', $request->data()));
+    }
+
+    public function test_language_code_is_sent_for_turbo_models(): void
+    {
+        config()->set('services.elevenlabs.key', 'test-key');
+        config()->set('services.elevenlabs.voice_id', 'voice-1');
+        config()->set('services.elevenlabs.model', 'eleven_turbo_v2_5');
+        config()->set('services.elevenlabs.language', 'hy');
+
+        Http::fake(['api.elevenlabs.io/*' => Http::response(['audio_base64' => base64_encode('audio')], 200)]);
+
+        app(ElevenLabsService::class)->synthesize('Սևակ');
+
+        Http::assertSent(fn ($request): bool => ($request->data()['language_code'] ?? null) === 'hy');
+    }
+
     public function test_it_is_not_configured_without_credentials(): void
     {
         config()->set('services.elevenlabs.key', null);
