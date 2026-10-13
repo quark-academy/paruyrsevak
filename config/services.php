@@ -58,6 +58,10 @@ return [
         // Cloudflare in front of ElevenLabs rejects requests without a
         // browser-like User-Agent (403 "Just a moment..."), so we send one.
         'user_agent' => env('ELEVENLABS_USER_AGENT', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'),
+        // Some shared-hosting IPs are challenged by Cloudflare in front of
+        // api.elevenlabs.io. Point this to an HTTP proxy (e.g. http://user:pass@host:port)
+        // to route the calls through a "clean" IP.
+        'proxy' => env('ELEVENLABS_PROXY'),
         'stability' => (float) env('ELEVENLABS_STABILITY', 0.5),
         'similarity_boost' => (float) env('ELEVENLABS_SIMILARITY_BOOST', 0.75),
         'style' => (float) env('ELEVENLABS_STYLE', 0.0),

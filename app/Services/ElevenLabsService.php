@@ -310,13 +310,26 @@ class ElevenLabsService
 
     protected function http(): PendingRequest
     {
+        $options = array_filter([
+            // Optional outbound proxy, see ELEVENLABS_PROXY.
+            'proxy' => config('services.elevenlabs.proxy') ?: null,
+        ]);
+
+        // HTTP/2 is less likely to be challenged by Cloudflare than HTTP/1.1.
+        if (defined('CURL_HTTP_VERSION_2_0')) {
+            $options['version'] = CURL_HTTP_VERSION_2_0;
+        }
+
         return Http::withHeaders([
             'xi-api-key' => (string) $this->apiKey,
             'Accept' => 'application/json, audio/mpeg',
             // Cloudflare rejects requests without a browser-like User-Agent.
             'User-Agent' => (string) config('services.elevenlabs.user_agent'),
             'Accept-Language' => 'en-US,en;q=0.9',
+            'Origin' => 'https://elevenlabs.io',
+            'Referer' => 'https://elevenlabs.io/',
         ])
+            ->withOptions($options)
             ->timeout((int) config('services.elevenlabs.timeout', 180))
             ->retry(2, 1500, throw: false);
     }
