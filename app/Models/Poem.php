@@ -39,6 +39,7 @@ class Poem extends Model
     {
         return [
             'is_original' => 'boolean',
+            'plays_count' => 'integer',
         ];
     }
 
@@ -91,6 +92,14 @@ class Poem extends Model
         }
 
         return $slug;
+    }
+
+    /**
+     * Human readable listen counter, e.g. "1 234" (Armenian thousands separator).
+     */
+    public function playsLabel(): string
+    {
+        return number_format((int) $this->plays_count, 0, ',', ' ');
     }
 
     /**

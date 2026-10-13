@@ -26,6 +26,7 @@
                     <th class="px-4 py-3">Վերնագիր</th>
                     <th class="px-4 py-3">URL (slug)</th>
                     <th class="px-4 py-3">Բառեր</th>
+                    <th class="px-4 py-3">Լսումներ</th>
                     <th class="px-4 py-3">Ձայն</th>
                     <th class="px-4 py-3 text-right">Գործողություններ</th>
                 </tr>
@@ -36,6 +37,7 @@
                         <td class="px-4 py-3 font-medium">{{ $poem->title }}</td>
                         <td class="px-4 py-3 text-stone-500"><code class="text-xs">{{ $poem->slug }}</code></td>
                         <td class="px-4 py-3 tabular-nums text-stone-600">{{ $poem->words_count }}</td>
+                        <td class="px-4 py-3 tabular-nums text-stone-600">{{ $poem->playsLabel() }}</td>
                         <td class="px-4 py-3">
                             @if ($poem->hasAudio())
                                 <span class="rounded-full px-2 py-0.5 text-[10px] font-medium {{ $poem->is_original ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800' }}">

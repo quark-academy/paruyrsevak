@@ -13,6 +13,7 @@
                     {{ $poem->voiceSourceLabel() }}
                 </span>
                 <span>{{ $poem->words->count() }} բառ</span>
+                <span class="tabular-nums">▶ {{ $poem->playsLabel() }} լսում</span>
             </p>
         </div>
         <div class="flex flex-wrap gap-2 text-sm">

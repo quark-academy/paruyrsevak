@@ -41,6 +41,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Listen counter
+    |--------------------------------------------------------------------------
+    |
+    | The players POST to /api/poems/{slug}/play as soon as the recording
+    | starts. Repeated plays by the same visitor inside this window are
+    | ignored, so refreshing a page does not inflate the counter.
+    | Set to 0 to count every single play request.
+    |
+    */
+
+    'plays' => [
+        'dedupe_seconds' => (int) env('POEMS_PLAYS_DEDUPE_SECONDS', 1800),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Shorts player defaults
     |--------------------------------------------------------------------------
     */

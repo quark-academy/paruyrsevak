@@ -28,7 +28,10 @@
                     {{ $poem->voiceSourceLabel() }}
                 </span>
             </div>
-            <p class="mt-1 text-xs text-stone-400">{{ $poem->words->count() }} բառ · կարաոկե համաժամեցում</p>
+            <p class="mt-1 text-xs text-stone-400">
+                <span id="plays-count" class="tabular-nums">▶ {{ $poem->playsLabel() }} լսում</span>
+                · {{ $poem->words->count() }} բառ · կարաոկե համաժամեցում
+            </p>
         </header>
 
         @if ($poem->hasAudio())
@@ -140,6 +143,42 @@
                 audio.currentTime = parseFloat(el.dataset.start || '0');
                 audio.play();
             }));
+        })();
+        </script>
+        @endpush
+    @endif
+
+    @if ($poem->hasAudio())
+        @push('scripts')
+        <script>
+        // Listen counter: registered once per page load, when playback starts.
+        (function () {
+            const audio = document.getElementById('poem-audio');
+            const counter = document.getElementById('plays-count');
+
+            if (!audio) return;
+
+            let tracked = false;
+
+            audio.addEventListener('play', () => {
+                if (tracked) return;
+                tracked = true;
+
+                fetch(@json(route('api.poems.play', $poem)), {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (counter && typeof data.label === 'string' && data.label) {
+                            counter.textContent = '▶ ' + data.label + ' լսում';
+                        }
+                    })
+                    .catch(() => {});
+            });
         })();
         </script>
         @endpush

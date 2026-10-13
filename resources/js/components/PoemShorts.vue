@@ -21,6 +21,10 @@ const shareNotice = ref('');
 const audioUrl = ref(source.audioUrl ?? null);
 const linesData = ref(source.lines ?? []);
 const isOriginal = ref(Boolean(source.isOriginal));
+const playsLabel = ref(source.playsLabel ?? '');
+
+/** A listen is registered once per page load (the server de-duplicates visitors). */
+let playTracked = false;
 
 const {
     playing,
@@ -94,6 +98,40 @@ function applyPayload(data) {
 
     if (typeof data.isOriginal === 'boolean') {
         isOriginal.value = data.isOriginal;
+    }
+
+    if (typeof data.playsLabel === 'string') {
+        playsLabel.value = data.playsLabel;
+    }
+}
+
+/**
+ * Tell the backend that the recording is playing. Failures are ignored: the
+ * counter must never break playback.
+ */
+async function trackPlay() {
+    if (playTracked || !source.playsUrl) {
+        return;
+    }
+
+    playTracked = true;
+
+    try {
+        const response = await fetch(source.playsUrl, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (typeof data.label === 'string' && data.label) {
+            playsLabel.value = data.label;
+        }
+    } catch (error) {
+        // ignore — playback must not depend on the counter
     }
 }
 
@@ -208,6 +246,13 @@ watch(ready, (isReady) => {
     }
 });
 
+// Count a listen as soon as the recording really starts playing.
+watch(playing, (isPlaying) => {
+    if (isPlaying) {
+        trackPlay();
+    }
+});
+
 onMounted(() => {
     window.addEventListener('keydown', onKeydown);
 
@@ -263,7 +308,9 @@ onBeforeUnmount(() => {
 
             <div class="min-w-0 text-center">
                 <h1 class="truncate text-sm font-semibold">{{ source.title }}</h1>
-                <p class="text-[10px] uppercase tracking-widest text-white/35">{{ source.author }}</p>
+                <p class="text-[10px] uppercase tracking-widest text-white/35">
+                    {{ source.author }}<template v-if="playsLabel"> · ▶ {{ playsLabel }}</template>
+                </p>
             </div>
 
             <button

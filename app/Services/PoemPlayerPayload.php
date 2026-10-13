@@ -38,6 +38,8 @@ class PoemPlayerPayload
             'content' => (string) $poem->content,
             'audioUrl' => $poem->hasAudio() ? $poem->audioUrl() : null,
             'isOriginal' => (bool) $poem->is_original,
+            'plays' => (int) $poem->plays_count,
+            'playsLabel' => $poem->playsLabel(),
             'canonical' => Seo::forPoem($poem),
             'lines' => $this->buildLines($poem, $words),
             'homeUrl' => route('home'),
@@ -48,6 +50,9 @@ class PoemPlayerPayload
                 : route('home'),
             'playerUrl' => $hasRouteKey
                 ? route('api.poems.player', ['poem' => $poem])
+                : null,
+            'playsUrl' => $hasRouteKey
+                ? route('api.poems.play', ['poem' => $poem])
                 : null,
             'generateUrl' => ($hasRouteKey && config('poems.public_generation'))
                 ? route('api.poems.generate', ['poem' => $poem])

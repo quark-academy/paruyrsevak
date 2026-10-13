@@ -37,7 +37,8 @@
                     <p class="mt-2 line-clamp-3 text-sm text-stone-600">{{ $poem->excerpt(120) }}</p>
 
                     <div class="mt-3 flex items-center gap-3 text-[11px] text-stone-400">
-                        <span>{{ $poem->words_count }} բառ</span>
+                        <span class="tabular-nums" title="Լսումների քանակ">▶ {{ $poem->playsLabel() }} լսում</span>
+                        <span>· {{ $poem->words_count }} բառ</span>
                         @if ($poem->hasAudio())
                             <span>· աուդիո պատրաստ է</span>
                         @endif
