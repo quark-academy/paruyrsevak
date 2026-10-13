@@ -39,7 +39,9 @@ class PoemPlayerPayload
             'canonical' => Seo::forPoem($poem),
             'lines' => $this->buildLines($poem, $words),
             'homeUrl' => route('home'),
-            'readingUrl' => route('poems.show', ['poem' => $poem]),
+            'readingUrl' => filled($poem->getRouteKey())
+                ? route('poems.show', ['poem' => $poem])
+                : route('home'),
             'playerUrl' => route('api.poems.player', ['poem' => $poem]),
             'generateUrl' => config('poems.public_generation')
                 ? route('api.poems.generate', ['poem' => $poem])

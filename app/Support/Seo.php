@@ -44,6 +44,12 @@ class Seo
      */
     public static function poemUrl(Poem $poem, bool $absolute = true): string
     {
+        // A poem without a route key (empty slug) cannot be linked to; never let
+        // url generation throw in that case.
+        if (blank($poem->getRouteKey())) {
+            return route('home', [], $absolute);
+        }
+
         if (Route::has('poems.short')) {
             return route('poems.short', ['poem' => $poem], $absolute);
         }
