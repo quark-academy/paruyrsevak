@@ -49,6 +49,7 @@ const {
     setRate,
     toggleMute,
     setLoop,
+    playOnFirstGesture,
 } = useAudioPlayer();
 
 /**
@@ -99,6 +100,17 @@ const navHint = computed(() => (shuffle.value
 const autoplayBlocked = computed(
     () => blocked.value && autoplay.value && state.value === 'ready' && !playing.value,
 );
+
+/**
+ * A refused autoplay is retried on the visitor's first interaction (a touch, a
+ * scroll or a key press), so the recording starts by itself the moment they
+ * reach for the screen — which is what "autoplay" should feel like on a phone.
+ */
+watch(autoplayBlocked, (isBlocked) => {
+    if (isBlocked && autoplay.value) {
+        playOnFirstGesture();
+    }
+});
 
 const silhouetteState = computed(() => {
     if (state.value === 'ready') {

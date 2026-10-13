@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 
 /**
  * Tiny reactive wrapper around a single HTMLAudioElement.
@@ -199,6 +199,59 @@ export function useAudioPlayer() {
         }
     });
 
+    /**
+     * Autoplay retry for browsers that refuse audible playback until the
+     * visitor interacts with the page.
+     *
+     * The recording then starts on the very first touch, scroll or key press —
+     * usually the moment the visitor reaches for the screen — so "autoplay"
+     * still feels automatic on phones. Taps that land on a control are ignored:
+     * those controls start playback themselves.
+     */
+    let disarmGestureResume = null;
+
+    function playOnFirstGesture() {
+        if (disarmGestureResume) {
+            return;
+        }
+
+        const events = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
+
+        function stop() {
+            disarmGestureResume = null;
+            events.forEach((name) => window.removeEventListener(name, start, true));
+        }
+
+        function start(event) {
+            const target = event.target;
+            const onControl = target instanceof Element
+                && Boolean(target.closest('button, a, input, select, textarea, [role="button"]'));
+
+            // Space is the player's own play/pause shortcut, and every control
+            // looks after its own taps.
+            if (onControl || event.code === 'Space') {
+                return;
+            }
+
+            stop();
+
+            if (!playing.value) {
+                play();
+            }
+        }
+
+        disarmGestureResume = stop;
+
+        events.forEach((name) => window.addEventListener(name, start, { capture: true, passive: true }));
+    }
+
+    // Once something really plays, a pending retry is pointless.
+    watch(playing, (isPlaying) => {
+        if (isPlaying) {
+            disarmGestureResume?.();
+        }
+    });
+
     return {
         audio,
         src,
@@ -225,5 +278,6 @@ export function useAudioPlayer() {
         toggleMute,
         setLoop,
         toggleLoop,
+        playOnFirstGesture,
     };
 }

@@ -217,9 +217,35 @@
 
             if (!autoplay) return;
 
-            // Browsers may refuse audible autoplay without a gesture — the
-            // visitor can always press play, so a failure is fine here.
-            audio.play().catch(() => {});
+            // Browsers may refuse audible autoplay without a gesture. Instead
+            // of stopping there, the recording starts on the visitor's first
+            // interaction — which is what autoplay should feel like on a phone.
+            audio.play().catch(() => {
+                const events = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
+
+                const resume = (event) => {
+                    const target = event.target;
+                    const onControl = target instanceof Element
+                        && Boolean(target.closest('button, a, input, select, textarea, [role="button"]'));
+
+                    // Space is the player's own play/pause shortcut, and every
+                    // control looks after its own taps.
+                    if (onControl || event.code === 'Space') {
+                        return;
+                    }
+
+                    stopResume();
+                    audio.play().catch(() => {});
+                };
+
+                const stopResume = () => events.forEach(
+                    (name) => window.removeEventListener(name, resume, true),
+                );
+
+                events.forEach(
+                    (name) => window.addEventListener(name, resume, { capture: true, passive: true }),
+                );
+            });
         })();
         </script>
         @endpush
