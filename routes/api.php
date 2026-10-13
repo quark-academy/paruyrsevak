@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\PoemPlayController;
 use App\Http\Controllers\Api\PoemPlayerController;
+use App\Http\Controllers\Api\RandomPoemController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,6 +11,12 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Consumed by the Vue Shorts player via fetch/XHR (same origin).
 */
+
+// Shuffle: a random poem, optionally excluding the one being listened to.
+// Declared before "poems/{poem}" so "random" is never treated as a slug.
+Route::get('poems/random', RandomPoemController::class)
+    ->middleware('throttle:120,1')
+    ->name('api.poems.random');
 
 Route::get('poems/{poem}', [PoemPlayerController::class, 'show'])
     ->name('api.poems.player');

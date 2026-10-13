@@ -57,6 +57,14 @@ class PoemPlayerPayload
             'generateUrl' => ($hasRouteKey && config('poems.public_generation'))
                 ? route('api.poems.generate', ['poem' => $poem])
                 : null,
+            'randomUrl' => route('api.poems.random'),
+            // Player preferences: defaults from config, the visitor's own
+            // choice lives in the browser (localStorage) and wins on load.
+            'prefs' => [
+                'autoplay' => (bool) config('poems.player.autoplay'),
+                'loop' => false,
+                'shuffle' => false,
+            ],
             'autoplay' => (bool) config('poems.player.autoplay'),
             'background' => (string) config('poems.player.background'),
             'gold' => (string) config('poems.player.gold'),

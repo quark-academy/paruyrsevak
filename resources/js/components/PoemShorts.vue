@@ -2,9 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import KaraokeLyrics from './KaraokeLyrics.vue';
 import PlayerControls from './PlayerControls.vue';
+import PlayerPrefs from './PlayerPrefs.vue';
 import SevakSilhouette from './SevakSilhouette.vue';
 import { useAudioPlayer } from '../composables/useAudioPlayer';
 import { useKaraoke } from '../composables/useKaraoke';
+import { usePlayerPrefs } from '../composables/usePlayerPrefs';
 import { useSwipe } from '../composables/useSwipe';
 
 const props = defineProps({
@@ -35,6 +37,8 @@ const {
     rate,
     muted,
     loop,
+    blocked,
+    endedAt,
     progress,
     load,
     play,
@@ -43,8 +47,14 @@ const {
     seekRatio,
     setRate,
     toggleMute,
-    toggleLoop,
+    setLoop,
 } = useAudioPlayer();
+
+/**
+ * Player preferences (autoplay / repeat / shuffle) survive navigation between
+ * poems through localStorage, so "autoplay + shuffle" behaves like a stream.
+ */
+const { autoplay, loop: prefLoop, shuffle, toggle: togglePref } = usePlayerPrefs(source.prefs ?? {});
 
 const lines = computed(() => linesData.value);
 const words = computed(() => lines.value.flat());
@@ -54,6 +64,16 @@ const { activeIndex, stateFor } = useKaraoke(words, time);
 const hasWords = computed(() => words.value.length > 0);
 const showLyrics = computed(() => hasWords.value && state.value === 'ready');
 const showRawText = computed(() => !showLyrics.value && state.value !== 'generating' && !loading.value);
+
+/** Hint under the controls, depending on the navigation mode. */
+const navHint = computed(() => (shuffle.value
+    ? 'Սահեցրու՝ պատահական բանաստեղծություն'
+    : 'Սահեցրու վերև/ներքև՝ հաջորդ բանաստեղծությունը'));
+
+/** Autoplay was refused by the browser — offer a "tap to listen" button. */
+const autoplayBlocked = computed(
+    () => blocked.value && autoplay.value && state.value === 'ready' && !playing.value,
+);
 
 const silhouetteState = computed(() => {
     if (state.value === 'ready') {
@@ -195,6 +215,54 @@ function go(url) {
     }
 }
 
+let navigating = false;
+
+/**
+ * Next poem: the sequential neighbour, or a fresh random one in shuffle mode.
+ * Falls back to the neighbour when the random endpoint has nothing to offer.
+ */
+async function goNext() {
+    if (navigating) {
+        return;
+    }
+
+    if (!shuffle.value || !source.randomUrl) {
+        go(source.next?.url);
+
+        return;
+    }
+
+    navigating = true;
+
+    try {
+        const url = new URL(source.randomUrl, window.location.origin);
+
+        if (source.slug) {
+            url.searchParams.set('exclude', source.slug);
+        }
+
+        const response = await fetch(url.toString(), {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (data.url) {
+            window.location.href = data.url;
+
+            return;
+        }
+    } catch (error) {
+        // Network hiccup: fall back to the sequential neighbour below.
+    }
+
+    navigating = false;
+    go(source.next?.url);
+}
+
 async function share() {
     const url = source.canonical || window.location.href;
 
@@ -221,10 +289,14 @@ async function share() {
 }
 
 function onKeydown(event) {
-    if (event.code === 'ArrowUp' && source.next) {
-        go(source.next.url);
-    } else if (event.code === 'ArrowDown' && source.prev) {
-        go(source.prev.url);
+    if (event.code === 'ArrowDown') {
+        goNext();
+    } else if (event.code === 'ArrowUp') {
+        go(source.prev?.url);
+    } else if (event.code === 'KeyL') {
+        togglePref('loop');
+    } else if (event.code === 'KeyS') {
+        togglePref('shuffle');
     } else if (event.code === 'Space' && state.value === 'ready') {
         event.preventDefault();
         toggle();
@@ -232,18 +304,37 @@ function onKeydown(event) {
 }
 
 useSwipe({
-    onUp: () => go(source.next?.url),
+    onUp: () => goNext(),
     onDown: () => go(source.prev?.url),
 });
 
-watch(ready, (isReady) => {
-    if (isReady) {
-        state.value = 'ready';
+// Repeat: keep the audio element looping whenever the visitor asks for it.
+watch(prefLoop, (value) => setLoop(value), { immediate: true });
 
-        if (source.autoplay) {
-            play();
-        }
+let autoplayTried = false;
+
+watch(ready, (isReady) => {
+    if (!isReady) {
+        return;
     }
+
+    state.value = 'ready';
+
+    // Browsers only allow audible autoplay after a user gesture. When the
+    // attempt is refused, "blocked" turns on and the player offers a tap.
+    if (!autoplayTried && autoplay.value) {
+        autoplayTried = true;
+        play();
+    }
+});
+
+// The recording ended: repeat it (loop) or keep the stream going.
+watch(endedAt, () => {
+    if (prefLoop.value || !autoplay.value) {
+        return;
+    }
+
+    goNext();
 });
 
 // Count a listen as soon as the recording really starts playing.
@@ -323,7 +414,7 @@ onBeforeUnmount(() => {
 
         <!-- portrait -->
         <div class="relative z-10 flex min-h-0 flex-1 items-center justify-center px-10">
-            <div class="aspect-[200/260] h-[32dvh] max-h-72">
+            <div class="aspect-[200/260] h-[26dvh] max-h-60">
                 <SevakSilhouette
                     :progress="silhouetteProgress"
                     :state="silhouetteState"
@@ -331,6 +422,20 @@ onBeforeUnmount(() => {
                     class="h-full w-full"
                 />
             </div>
+
+            <!-- Audible autoplay needs a gesture: ask for one tap. -->
+            <button
+                v-if="autoplayBlocked"
+                type="button"
+                class="absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-3xl border border-amber-300/30 bg-black/60 px-6 py-5 text-center backdrop-blur"
+                @click="play"
+            >
+                <span
+                    class="grid h-14 w-14 animate-pulse place-items-center rounded-full text-xl font-bold text-stone-900"
+                    :style="{ backgroundColor: gold }"
+                >▶</span>
+                <span class="text-[11px] text-white/75">Սեղմիր՝ լսելը սկսելու համար</span>
+            </button>
 
             <div class="absolute bottom-1 left-1/2 -translate-x-1/2">
                 <span
@@ -383,20 +488,28 @@ onBeforeUnmount(() => {
                 :duration="duration"
                 :rate="rate"
                 :muted="muted"
-                :loop="loop"
                 :disabled="state !== 'ready'"
                 @toggle="toggle"
                 @seek="seekRatio"
                 @rate="setRate"
                 @mute="toggleMute"
-                @loop="toggleLoop"
             />
 
-            <div class="mt-2 flex items-center justify-between text-[10px] text-white/30">
-                <a :href="source.readingUrl" class="underline-offset-2 hover:text-white/60 hover:underline">
+            <!-- autoplay / repeat / shuffle: remembered between poems -->
+            <div class="mt-2.5">
+                <PlayerPrefs
+                    :autoplay="autoplay"
+                    :loop="prefLoop"
+                    :shuffle="shuffle"
+                    @toggle="togglePref"
+                />
+            </div>
+
+            <div class="mt-2 flex items-center justify-between gap-2 text-[10px] text-white/30">
+                <a :href="source.readingUrl" class="shrink-0 underline-offset-2 hover:text-white/60 hover:underline">
                     Ամբողջ տեքստը
                 </a>
-                <span>Սահեցրու վերև/ներքև՝ հաջորդ բանաստեղծությունը</span>
+                <span class="truncate">{{ navHint }}</span>
             </div>
         </section>
 
@@ -414,9 +527,9 @@ onBeforeUnmount(() => {
             <button
                 type="button"
                 class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-sm backdrop-blur transition disabled:opacity-25"
-                :disabled="!source.next"
-                aria-label="Հաջորդը"
-                @click="go(source.next?.url)"
+                :disabled="!source.next && !shuffle"
+                :aria-label="shuffle ? 'Պատահական բանաստեղծություն' : 'Հաջորդը'"
+                @click="goNext"
             >
                 ⌄
             </button>

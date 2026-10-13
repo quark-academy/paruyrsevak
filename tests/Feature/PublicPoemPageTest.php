@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Poem;
+use App\Support\Seo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -55,5 +56,69 @@ class PublicPoemPageTest extends TestCase
         $this->get('/?q='.urlencode('Ձմեռ'))
             ->assertOk()
             ->assertSee($other->title);
+    }
+
+    public function test_the_hero_offers_a_play_shortcut_and_aggregate_numbers(): void
+    {
+        $poem = Poem::factory()->create(['slug' => 'hero-poem', 'plays_count' => 7]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Ձայնագրությունների արխիվ')
+            ->assertSee('Սկսել լսելը')
+            ->assertSee('data-random-poem', false)
+            ->assertSee('▶ 7 լսում', false)
+            ->assertSee(route('api.poems.random'), false)
+            ->assertSee(Seo::poemUrl($poem), false);
+    }
+
+    public function test_an_empty_catalogue_hides_the_play_shortcut(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Ձայնագրությունների արխիվ')
+            ->assertDontSee('Սկսել լսելը');
+    }
+
+    public function test_the_source_chips_filter_the_catalogue(): void
+    {
+        $archive = Poem::factory()->original()->create(['title' => 'Արխիվային գործ']);
+        $generated = Poem::factory()->create(['title' => 'ԱԻ գործ']);
+
+        $response = $this->get('/?source=original')->assertOk();
+
+        $response->assertSee($archive->title);
+        $response->assertDontSee($generated->title);
+
+        $reverse = $this->get('/?source=ai')->assertOk();
+
+        $reverse->assertSee($generated->title);
+        $reverse->assertDontSee($archive->title);
+    }
+
+    public function test_the_popular_sort_leads_with_the_most_listened_poem(): void
+    {
+        $quiet = Poem::factory()->create(['title' => 'Հանգիստ գործ', 'plays_count' => 1]);
+        $loud = Poem::factory()->create(['title' => 'Բարձր գործ', 'plays_count' => 99]);
+
+        $response = $this->get('/?sort=popular')->assertOk();
+
+        $response->assertSee('Ամենաշատ լսվածը');
+
+        $content = (string) $response->getContent();
+
+        $this->assertLessThan(
+            strpos($content, $quiet->title),
+            strpos($content, $loud->title),
+        );
+    }
+
+    public function test_the_spotlight_stays_hidden_until_a_recording_was_listened_to(): void
+    {
+        Poem::factory()->create(['plays_count' => 0]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertDontSee('Ամենաշատ լսվածը');
     }
 }

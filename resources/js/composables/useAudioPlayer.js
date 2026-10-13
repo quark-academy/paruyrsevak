@@ -20,6 +20,10 @@ export function useAudioPlayer() {
     const muted = ref(false);
     const loop = ref(false);
     const seeking = ref(false);
+    /** Set when the browser refuses audible autoplay (needs a user gesture). */
+    const blocked = ref(false);
+    /** Bumped every time the recording reaches its end (drives auto-advance). */
+    const endedAt = ref(0);
 
     let rafId = null;
 
@@ -35,6 +39,7 @@ export function useAudioPlayer() {
         el.preload = 'metadata';
         el.crossOrigin = 'anonymous';
         el.volume = muted.value ? 0 : 1;
+        el.loop = loop.value;
 
         el.addEventListener('loadedmetadata', () => {
             duration.value = isFinite(el.duration) ? el.duration : 0;
@@ -51,6 +56,8 @@ export function useAudioPlayer() {
         el.addEventListener('seeked', () => { seeking.value = false; });
         el.addEventListener('ended', () => {
             playing.value = false;
+            endedAt.value += 1;
+
             if (loop.value) {
                 el.currentTime = 0;
                 el.play().catch(() => {});
@@ -107,9 +114,17 @@ export function useAudioPlayer() {
             return Promise.resolve();
         }
 
-        return el.play().catch(() => {
-            playing.value = false;
-        });
+        return el
+            .play()
+            .then(() => {
+                blocked.value = false;
+            })
+            .catch((error) => {
+                // Browsers only allow audible playback after a user gesture:
+                // remember it so the player can offer a "tap to listen" hint.
+                playing.value = false;
+                blocked.value = error?.name === 'NotAllowedError';
+            });
     }
 
     function pause() {
@@ -157,8 +172,16 @@ export function useAudioPlayer() {
         }
     }
 
+    function setLoop(value) {
+        loop.value = Boolean(value);
+
+        if (audio.value) {
+            audio.value.loop = loop.value;
+        }
+    }
+
     function toggleLoop() {
-        loop.value = !loop.value;
+        setLoop(!loop.value);
     }
 
     onBeforeUnmount(() => {
@@ -186,6 +209,8 @@ export function useAudioPlayer() {
         rate,
         muted,
         loop,
+        blocked,
+        endedAt,
         progress,
         started,
         load,
@@ -196,6 +221,7 @@ export function useAudioPlayer() {
         seekRatio,
         setRate,
         toggleMute,
+        setLoop,
         toggleLoop,
     };
 }

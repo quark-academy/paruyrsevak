@@ -59,10 +59,16 @@ return [
     |--------------------------------------------------------------------------
     | Shorts player defaults
     |--------------------------------------------------------------------------
+    |
+    | autoplay starts the recording as soon as the player page opens. Every
+    | visitor can turn it off (and switch repeat / shuffle on) right inside
+    | the player: the choice is stored in the browser and survives navigation
+    | between poems, so "autoplay + shuffle" behaves like a radio stream.
+    |
     */
 
     'player' => [
-        'autoplay' => filter_var(env('POEMS_AUTOPLAY', false), FILTER_VALIDATE_BOOL),
+        'autoplay' => filter_var(env('POEMS_AUTOPLAY', true), FILTER_VALIDATE_BOOL),
         'background' => env('POEMS_BACKGROUND', '#0b0a09'),
         'gold' => env('POEMS_GOLD', '#e8c46a'),
     ],

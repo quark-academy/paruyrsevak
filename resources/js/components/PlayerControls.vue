@@ -7,11 +7,10 @@ const props = defineProps({
     duration: { type: Number, default: 0 },
     rate: { type: Number, default: 1 },
     muted: { type: Boolean, default: false },
-    loop: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['toggle', 'seek', 'rate', 'mute', 'loop']);
+const emit = defineEmits(['toggle', 'seek', 'rate', 'mute']);
 
 const RATES = [0.75, 1, 1.25, 1.5];
 
@@ -59,18 +58,18 @@ function cycleRate() {
         </div>
 
         <!-- controls -->
-        <div class="mt-2 flex items-center justify-between gap-3">
+        <div class="mt-3 flex items-center gap-2">
             <button
                 type="button"
-                class="grid h-9 w-9 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
-                :aria-pressed="loop"
-                aria-label="Կրկնել"
-                @click="emit('loop')"
+                class="grid h-9 min-w-12 shrink-0 place-items-center rounded-full px-2 text-xs font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+                :title="'Արագություն՝ ' + rate + '×'"
+                aria-label="Արագություն"
+                @click="cycleRate"
             >
-                <span :class="loop ? 'text-amber-300' : ''">↻</span>
+                {{ rate }}×
             </button>
 
-            <div class="flex items-center gap-4">
+            <div class="flex flex-1 items-center justify-center gap-7">
                 <button
                     type="button"
                     class="text-2xl text-white/70 transition hover:text-white disabled:opacity-30"
@@ -103,13 +102,26 @@ function cycleRate() {
                 </button>
             </div>
 
+            <!-- Sound toggle: mirrors the speed button so the transport stays centred. -->
             <button
                 type="button"
-                class="grid h-9 min-w-9 place-items-center rounded-full px-2 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-                aria-label="Արագություն"
-                @click="cycleRate"
+                class="grid h-9 min-w-12 shrink-0 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+                :aria-pressed="muted"
+                :aria-label="muted ? 'Միացնել ձայնը' : 'Անջատել ձայնը'"
+                :title="muted ? 'Միացնել ձայնը' : 'Անջատել ձայնը'"
+                @click="emit('mute')"
             >
-                {{ rate }}×
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 9.5h3L11 6v12l-4-3.5H4z" />
+                    <template v-if="muted">
+                        <path d="M15.5 9.5l4.5 5M20 9.5l-4.5 5" />
+                    </template>
+                    <template v-else>
+                        <path d="M15.5 9a4 4 0 0 1 0 6" />
+                        <path d="M18 6.5a7.5 7.5 0 0 1 0 11" />
+                    </template>
+                </svg>
             </button>
         </div>
     </div>
