@@ -99,6 +99,51 @@ class AdminPanelTest extends TestCase
         $this->assertDatabaseHas('poem_words', ['poem_id' => $poem->id, 'word' => 'Մեկ']);
     }
 
+    public function test_the_timings_editor_flags_words_that_differ_from_the_text(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+        $poem->words()->create(['word' => 'Մէկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.poems.timings', $poem))
+            ->assertOk()
+            ->assertSee('1 բառ տարբերվում է տեքստից', false)
+            // One click fixes the spelling: the editor offers the text's token.
+            ->assertSee('↺ դարձնել «Մեկ»', false)
+            ->assertSee('data-word-input', false);
+    }
+
+    public function test_a_corrected_spelling_is_persisted(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+        $poem->words()->create(['word' => 'Մէկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+
+        $this->actingAs($admin)->post(route('admin.poems.timings.update', $poem), [
+            'words' => [
+                ['word' => 'Մեկ', 'start_time' => '0', 'end_time' => '1', 'word_order' => 0],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('poem_words', ['poem_id' => $poem->id, 'word' => 'Մեկ']);
+        $this->assertDatabaseMissing('poem_words', ['poem_id' => $poem->id, 'word' => 'Մէկ']);
+    }
+
+    public function test_a_word_list_that_matches_the_text_is_reported_as_clean(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+        $poem->words()->create(['word' => 'Մեկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.poems.timings', $poem))
+            ->assertOk()
+            ->assertSee('բոլորը համընկնում են տեքստի հետ', false)
+            // No per-word "restore" button means nothing had to be fixed.
+            ->assertDontSee('data-token', false);
+    }
+
     public function test_admin_can_regenerate_words_from_content(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveTimingsRequest;
 use App\Models\Poem;
 use App\Services\PoemWordSynchronizer;
+use App\Support\WordTokenizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -29,6 +30,9 @@ class PoemWordController extends Controller
         return view('admin.poems.timings', [
             'poem' => $poem,
             'words' => $poem->words,
+            // The poem text is the source of truth for spelling: the editor
+            // shows where the alignment drifted and offers one-click fixes.
+            'tokens' => WordTokenizer::split((string) $poem->content),
         ]);
     }
 
