@@ -55,6 +55,9 @@ return [
         'language' => env('ELEVENLABS_LANGUAGE', 'hy'),
         'with_timestamps' => filter_var(env('ELEVENLABS_WITH_TIMESTAMPS', true), FILTER_VALIDATE_BOOL),
         'timeout' => (int) env('ELEVENLABS_TIMEOUT', 180),
+        // Cloudflare in front of ElevenLabs rejects requests without a
+        // browser-like User-Agent (403 "Just a moment..."), so we send one.
+        'user_agent' => env('ELEVENLABS_USER_AGENT', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'),
         'stability' => (float) env('ELEVENLABS_STABILITY', 0.5),
         'similarity_boost' => (float) env('ELEVENLABS_SIMILARITY_BOOST', 0.75),
         'style' => (float) env('ELEVENLABS_STYLE', 0.0),

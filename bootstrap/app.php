@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsAdmin;
-use App\Http\Middleware\StripBasePath;
+use App\Http\Middleware\NormalizeBasePath;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Must run before anything reads the request path (see the middleware).
-        $middleware->prepend(StripBasePath::class);
+        $middleware->prepend(NormalizeBasePath::class);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,

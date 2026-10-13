@@ -150,6 +150,15 @@ class ElevenLabsService
                 'status' => $response->status(),
                 'body' => Str::limit($response->body(), 1000),
             ]);
+
+            // Cloudflare's bot protection answers with a challenge page instead
+            // of a JSON error — surface a clear hint instead of raw HTML.
+            if ($this->isCloudflareChallenge($response->body())) {
+                throw new RuntimeException(
+                    'ElevenLabs-ը մերժեց հարցումը (Cloudflare 403)։ Ստուգիր ELEVENLABS_API_KEY-ը և ELEVENLABS_USER_AGENT-ը։'
+                );
+            }
+
             $response->throw();
         }
 
@@ -304,9 +313,21 @@ class ElevenLabsService
         return Http::withHeaders([
             'xi-api-key' => (string) $this->apiKey,
             'Accept' => 'application/json, audio/mpeg',
+            // Cloudflare rejects requests without a browser-like User-Agent.
+            'User-Agent' => (string) config('services.elevenlabs.user_agent'),
+            'Accept-Language' => 'en-US,en;q=0.9',
         ])
             ->timeout((int) config('services.elevenlabs.timeout', 180))
             ->retry(2, 1500, throw: false);
+    }
+
+    /**
+     * Detect Cloudflare's "Just a moment..." challenge page.
+     */
+    protected function isCloudflareChallenge(string $body): bool
+    {
+        return str_contains($body, 'Just a moment')
+            || str_contains($body, 'challenges.cloudflare.com');
     }
 
     protected function alignmentPath(string $audioPath): string
