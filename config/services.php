@@ -35,4 +35,32 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | ElevenLabs (AI Voice Generation)
+    |--------------------------------------------------------------------------
+    |
+    | Credentials for the ElevenLabs text-to-speech REST API. The application
+    | uses lazy generation: the first request renders the poem to an .mp3
+    | file inside the "public" disk, later requests reuse the cached file.
+    |
+    */
+
+    'elevenlabs' => [
+        'key' => env('ELEVENLABS_API_KEY'),
+        'base_url' => env('ELEVENLABS_BASE_URL', 'https://api.elevenlabs.io/v1'),
+        'voice_id' => env('ELEVENLABS_VOICE_ID'),
+        'model' => env('ELEVENLABS_MODEL', 'eleven_multilingual_v2'),
+        'output_format' => env('ELEVENLABS_OUTPUT_FORMAT', 'mp3_44100_128'),
+        'language' => env('ELEVENLABS_LANGUAGE', 'hy'),
+        'with_timestamps' => filter_var(env('ELEVENLABS_WITH_TIMESTAMPS', true), FILTER_VALIDATE_BOOL),
+        'timeout' => (int) env('ELEVENLABS_TIMEOUT', 180),
+        'stability' => (float) env('ELEVENLABS_STABILITY', 0.5),
+        'similarity_boost' => (float) env('ELEVENLABS_SIMILARITY_BOOST', 0.75),
+        'style' => (float) env('ELEVENLABS_STYLE', 0.0),
+        'use_speaker_boost' => filter_var(env('ELEVENLABS_SPEAKER_BOOST', true), FILTER_VALIDATE_BOOL),
+        'disk' => env('ELEVENLABS_DISK', 'public'),
+        'directory' => env('ELEVENLABS_DIRECTORY', 'ai_audio'),
+    ],
+
 ];

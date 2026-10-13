@@ -1,0 +1,86 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Poem;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AdminPanelTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_guests_are_redirected_to_the_admin_login(): void
+    {
+        $this->get(route('admin.dashboard'))->assertRedirect(route('admin.login'));
+    }
+
+    public function test_non_admin_user_is_forbidden(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+
+        $this->actingAs($user)->get(route('admin.dashboard'))->assertForbidden();
+    }
+
+    public function test_admin_can_login(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'chief@paruyrsevak.am',
+            'password' => 'secret-password',
+            'is_admin' => true,
+        ]);
+
+        $this->post(route('admin.login.attempt'), [
+            'email' => 'chief@paruyrsevak.am',
+            'password' => 'secret-password',
+        ])->assertRedirect(route('admin.dashboard'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_admin_can_create_a_poem(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin)->post(route('admin.poems.store'), [
+            'title' => 'Աշուն',
+            'content' => "Տող մեկ\nՏող երկու",
+            'is_original' => '0',
+        ]);
+
+        $poem = Poem::query()->firstOrFail();
+
+        $response->assertRedirect(route('admin.poems.show', $poem));
+        $this->assertDatabaseHas('poems', ['title' => 'Աշուն']);
+    }
+
+    public function test_admin_can_store_word_timings(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+
+        $response = $this->actingAs($admin)->post(route('admin.poems.timings.update', $poem), [
+            'words' => [
+                ['word' => 'Մեկ', 'start_time' => '0', 'end_time' => '0.50', 'word_order' => 0],
+                ['word' => 'երկու', 'start_time' => '0.50', 'end_time' => '1.20', 'word_order' => 1],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertSame(2, $poem->words()->count());
+        $this->assertDatabaseHas('poem_words', ['poem_id' => $poem->id, 'word' => 'Մեկ']);
+    }
+
+    public function test_admin_can_regenerate_words_from_content(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու երեք']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.poems.timings.sync', $poem))
+            ->assertRedirect();
+
+        $this->assertSame(3, $poem->words()->count());
+    }
+}
