@@ -29,8 +29,10 @@ class PoemPlayerPayload
             ])
             ->all();
 
+        $hasRouteKey = filled($poem->getRouteKey());
+
         return [
-            'slug' => $poem->slug,
+            'slug' => (string) $poem->slug,
             'title' => $poem->title,
             'author' => 'Պարույր Սևակ',
             'content' => (string) $poem->content,
@@ -39,11 +41,15 @@ class PoemPlayerPayload
             'canonical' => Seo::forPoem($poem),
             'lines' => $this->buildLines($poem, $words),
             'homeUrl' => route('home'),
-            'readingUrl' => filled($poem->getRouteKey())
+            // A poem without a route key (empty slug) cannot be linked to:
+            // never let URL generation throw on the front-end.
+            'readingUrl' => $hasRouteKey
                 ? route('poems.show', ['poem' => $poem])
                 : route('home'),
-            'playerUrl' => route('api.poems.player', ['poem' => $poem]),
-            'generateUrl' => config('poems.public_generation')
+            'playerUrl' => $hasRouteKey
+                ? route('api.poems.player', ['poem' => $poem])
+                : null,
+            'generateUrl' => ($hasRouteKey && config('poems.public_generation'))
                 ? route('api.poems.generate', ['poem' => $poem])
                 : null,
             'autoplay' => (bool) config('poems.player.autoplay'),

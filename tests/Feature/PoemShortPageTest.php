@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Poem;
 use App\Services\PoemPlayerPayload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PoemShortPageTest extends TestCase
@@ -73,6 +74,23 @@ class PoemShortPageTest extends TestCase
         $this->assertCount(2, $payload['lines'][1]);
         $this->assertSame('Մեկ', $payload['lines'][0][0]['w']);
         $this->assertEqualsWithDelta(0.4, $payload['lines'][0][0]['e'], 0.001);
+    }
+
+    public function test_payload_survives_a_poem_without_a_slug(): void
+    {
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+
+        // Simulate a legacy row with an empty slug (breaks URL generation).
+        DB::table('poems')
+            ->where('id', $poem->getKey())
+            ->update(['slug' => '']);
+        $poem->refresh();
+
+        $payload = app(PoemPlayerPayload::class)->build($poem);
+
+        $this->assertNull($payload['playerUrl']);
+        $this->assertNull($payload['generateUrl']);
+        $this->assertSame(route('home'), $payload['readingUrl']);
     }
 
     public function test_prev_and_next_navigation_are_provided(): void
