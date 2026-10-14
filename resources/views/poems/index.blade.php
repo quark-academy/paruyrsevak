@@ -31,14 +31,10 @@
              class="pointer-events-none absolute -right-4 -top-6 h-40 w-40 select-none opacity-[0.06] sm:-right-6 sm:-top-10 sm:h-56 sm:w-56">
 
         <div class="relative">
-            <p class="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-amber-200/70 sm:block">
-                Ձայնագրությունների արխիվ
-            </p>
-
             <h1 class="mt-2.5 hidden text-3xl font-bold leading-tight sm:block sm:text-4xl">Պարույր Սևակ</h1>
 
             <p class="mt-1.5 hidden max-w-xl text-sm leading-relaxed text-stone-300 sm:block">
-                Լսիր բանաստեղծությունները՝ բառացի կարաոկե համաժամեցմամբ։
+                Լսիր բանաստեղծությունները՝  հեղինակի կատարմամբ։
             </p>
 
             <div class="flex items-center gap-2 sm:mt-5">
@@ -50,10 +46,6 @@
                     </a>
                 @endif
 
-                <button type="button" data-random-poem="{{ route('api.poems.random') }}"
-                        class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-stone-200 transition hover:border-amber-300/40 hover:text-white sm:flex-none">
-                    🎲 Պատահական
-                </button>
             </div>
 
             <p class="mt-4 hidden text-xs tabular-nums text-white/45 sm:block">
