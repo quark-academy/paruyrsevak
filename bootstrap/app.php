@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\ForceHttpsUrls;
 use App\Http\Middleware\NormalizeBasePath;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -27,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Must run before anything reads the request path (see the middleware).
         $middleware->prepend(NormalizeBasePath::class);
+
+        // A visitor behind the proxy is on https even when the origin is not:
+        // every generated URL has to say so, or the browser blocks the fetch
+        // calls that the player, the search and the catalogue button make.
+        $middleware->append(ForceHttpsUrls::class);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,

@@ -219,6 +219,12 @@
         const url = new URL(href, window.location.href);
         url.searchParams.set('fragment', '1');
 
+        // Stay on the protocol and host the visitor is on: a link generated
+        // behind a proxy can say http while the page is https, and the browser
+        // refuses such a call outright (mixed content, then CORS).
+        url.protocol = window.location.protocol;
+        url.host = window.location.host;
+
         button.dataset.loading = '1';
         button.classList.add('opacity-60');
 

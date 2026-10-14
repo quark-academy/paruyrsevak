@@ -98,4 +98,17 @@ class SeoTest extends TestCase
         $this->assertArrayHasKey('asset_url', config('app'));
         $this->assertArrayHasKey('force_root_url', config('app'));
     }
+
+    public function test_a_forwarded_https_request_generates_https_urls(): void
+    {
+        // Behind Cloudflare the origin sees plain http while the visitor is on
+        // https. Links must not follow the origin: a fetch made with an http://
+        // link from an https page is refused by the browser outright.
+        $response = $this->withServerVariables(['HTTP_X_FORWARDED_PROTO' => 'https'])->get('/');
+
+        $response->assertOk();
+
+        $this->assertStringContainsString('src="https://', (string) $response->getContent());
+        $this->assertStringNotContainsString('src="http://', (string) $response->getContent());
+    }
 }

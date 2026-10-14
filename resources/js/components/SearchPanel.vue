@@ -1,5 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { sameOrigin } from '../same-origin';
 
 const props = defineProps({
     /** Search endpoint, taken from the player payload. */
@@ -45,7 +46,7 @@ async function search(query) {
     request = new AbortController();
 
     try {
-        const response = await fetch(`${props.url}?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(sameOrigin(`${props.url}?q=${encodeURIComponent(query)}`), {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             signal: request.signal,
         });

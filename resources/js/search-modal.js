@@ -1,3 +1,5 @@
+import { sameOrigin } from './same-origin';
+
 /**
  * Header search modal.
  *
@@ -82,7 +84,7 @@ export function initSearchModal() {
         query = new AbortController();
 
         try {
-            const response = await fetch(`${endpoint}?q=${encodeURIComponent(term)}`, {
+            const response = await fetch(sameOrigin(`${endpoint}?q=${encodeURIComponent(term)}`), {
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 signal: query.signal,
             });

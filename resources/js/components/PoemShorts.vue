@@ -10,6 +10,7 @@ import { useAudioPlayer } from '../composables/useAudioPlayer';
 import { useKaraoke } from '../composables/useKaraoke';
 import { usePlayerPrefs } from '../composables/usePlayerPrefs';
 import { useSwipe } from '../composables/useSwipe';
+import { sameOrigin } from '../same-origin';
 
 const props = defineProps({
     payload: { type: Object, required: true },
@@ -230,7 +231,7 @@ async function trackPlay() {
     playTracked = true;
 
     try {
-        const response = await fetch(poem.value.playsUrl, {
+        const response = await fetch(sameOrigin(poem.value.playsUrl), {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -259,7 +260,7 @@ async function generate() {
     message.value = '';
 
     try {
-        const response = await fetch(poem.value.generateUrl, {
+        const response = await fetch(sameOrigin(poem.value.generateUrl), {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -329,7 +330,7 @@ async function navigate(target, { push = true } = {}) {
     state.value = 'loading';
 
     try {
-        const response = await fetch(target.playerUrl, {
+        const response = await fetch(sameOrigin(target.playerUrl), {
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
@@ -420,7 +421,7 @@ async function goNext() {
     navigating = true;
 
     try {
-        const url = new URL(poem.value.randomUrl, window.location.origin);
+        const url = new URL(sameOrigin(poem.value.randomUrl));
 
         if (poem.value.slug) {
             url.searchParams.set('exclude', poem.value.slug);
