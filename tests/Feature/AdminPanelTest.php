@@ -111,6 +111,8 @@ class AdminPanelTest extends TestCase
             ->assertSee('1 բառ տարբերվում է տեքստից', false)
             // One click fixes the spelling: the editor offers the text's token.
             ->assertSee('↺ դարձնել «Մեկ»', false)
+            // And one click joins the two halves when the AI split a word.
+            ->assertSee('միավորել հաջորդի հետ', false)
             ->assertSee('data-word-input', false);
     }
 
