@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\PoemPlayController;
 use App\Http\Controllers\Api\PoemPlayerController;
+use App\Http\Controllers\Api\PoemSearchController;
 use App\Http\Controllers\Api\RandomPoemController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('poems/random', RandomPoemController::class)
     ->middleware('throttle:120,1')
     ->name('api.poems.random');
+
+// Search: what the header icon's modal asks for.
+Route::get('search', PoemSearchController::class)
+    ->middleware('throttle:120,1')
+    ->name('api.search');
 
 Route::get('poems/{poem}', [PoemPlayerController::class, 'show'])
     ->name('api.poems.player');

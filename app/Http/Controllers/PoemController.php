@@ -8,6 +8,7 @@ use App\Support\Query;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Throwable;
 
@@ -15,8 +16,12 @@ class PoemController extends Controller
 {
     /**
      * Public, mobile-first catalogue of poems.
+     *
+     * The same action also answers the "load more" button: an asynchronous
+     * request gets only the next slice of cards (and the URL of the slice after
+     * it in a header), so the catalogue never sends anyone to a second page.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|Response
     {
         $term = Query::string($request, 'q');
         $source = Query::string($request, 'source');
@@ -46,6 +51,16 @@ class PoemController extends Controller
 
         $isFiltered = $term !== '' || $source !== '';
 
+        // More of the catalogue, in the same query shape: the button below the
+        // list keeps pointing here until the last slice arrived.
+        $moreUrl = $poems->nextPageUrl();
+
+        if ($request->ajax()) {
+            return response()
+                ->view('poems._cards', ['poems' => $poems])
+                ->header('X-Next-Page', $moreUrl ?? '');
+        }
+
         return view('poems.index', [
             'poems' => $poems,
             'term' => $term,
@@ -57,6 +72,7 @@ class PoemController extends Controller
             'spotlight' => $this->spotlight(),
             // "Start listening": the most listened recording, else the newest poem.
             'listenPoem' => $this->listenPoem($filtered),
+            'moreUrl' => $moreUrl,
         ]);
     }
 

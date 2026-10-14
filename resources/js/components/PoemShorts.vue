@@ -4,6 +4,7 @@ import KaraokeLyrics from './KaraokeLyrics.vue';
 import PlayerControls from './PlayerControls.vue';
 import PlayerOnboarding from './PlayerOnboarding.vue';
 import PlayerPrefs from './PlayerPrefs.vue';
+import SearchPanel from './SearchPanel.vue';
 import SevakSilhouette from './SevakSilhouette.vue';
 import { useAudioPlayer } from '../composables/useAudioPlayer';
 import { useKaraoke } from '../composables/useKaraoke';
@@ -77,6 +78,9 @@ const {
     toggleAutoplay,
     markIntroSeen,
 } = usePlayerPrefs(source.prefs ?? {});
+
+/** The header search panel: a match is played right here, not on a new page. */
+const searchOpen = ref(false);
 
 /** First visit: a short, premium looking walkthrough (remembered in the browser). */
 const showIntro = ref(!seenIntro.value);
@@ -477,6 +481,15 @@ async function share() {
     }, 2000);
 }
 
+/**
+ * A search result replaces the poem inside this document, exactly like a swipe:
+ * the player keeps the browser's activation, so the recording keeps playing.
+ */
+function onSearchSelect(result) {
+    searchOpen.value = false;
+    navigate(result);
+}
+
 function onKeydown(event) {
     if (event.code === 'ArrowDown') {
         goNext();
@@ -595,14 +608,6 @@ onBeforeUnmount(() => {
             style="background: radial-gradient(120% 80% at 50% 15%, rgba(232,196,106,0.10) 0%, rgba(11,10,9,0) 60%);"
         ></div>
 
-        <!-- playback progress (top hairline) -->
-        <div class="absolute inset-x-0 top-0 z-30 h-0.5 bg-white/10">
-            <div
-                class="h-full transition-[width] duration-200 ease-linear"
-                :style="{ width: silhouetteProgress * 100 + '%', backgroundColor: gold }"
-            ></div>
-        </div>
-
         <!-- top bar -->
         <header
             class="relative z-20 flex items-center justify-between gap-2 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-1"
@@ -624,12 +629,28 @@ onBeforeUnmount(() => {
                 </p>
             </div>
 
-            <button
-                type="button"
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-sm"
-                aria-label="Կիսվել"
-                @click="share"
-            >⤴</button>
+            <div class="flex shrink-0 items-center gap-1.5">
+                <button
+                    type="button"
+                    class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5"
+                    aria-label="Փնտրել"
+                    title="Փնտրել"
+                    @click="searchOpen = true"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M20 20l-3.6-3.6" />
+                    </svg>
+                </button>
+
+                <button
+                    type="button"
+                    class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-sm"
+                    aria-label="Կիսվել"
+                    @click="share"
+                >⤴</button>
+            </div>
         </header>
 
         <!-- portrait -->
@@ -771,6 +792,15 @@ onBeforeUnmount(() => {
 
         <!-- First visit: a short walkthrough (shown once per browser). -->
         <PlayerOnboarding v-if="showIntro" :gold="gold" @done="finishIntro" />
+
+        <!-- Search: the same modal as on the catalogue, inside the player. -->
+        <SearchPanel
+            v-if="searchOpen"
+            :url="poem.searchUrl"
+            :accent="gold"
+            @close="searchOpen = false"
+            @select="onSearchSelect"
+        />
     </div>
 </template>
 

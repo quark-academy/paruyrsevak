@@ -41,8 +41,47 @@
                 <span class="block text-[11px] font-normal text-stone-500">բանաստեղծությունների ձայնը</span>
             </span>
         </a>
+
+        {{-- Search lives in a modal: one icon, no extra page (search-modal.js). --}}
+        <button
+            type="button"
+            data-search-open
+            class="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200/60 hover:text-stone-900"
+            aria-label="Փնտրել"
+            title="Փնտրել"
+        >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.6-3.6" />
+            </svg>
+        </button>
     </div>
 </header>
+
+{{-- Search modal: results appear as you type, the page behind stays put. --}}
+<div id="search-modal" data-search-url="{{ route('api.search') }}"
+     class="fixed inset-0 z-40 hidden bg-stone-900/40 px-4 pt-[max(3.5rem,12vh)] backdrop-blur-sm">
+    <div class="mx-auto w-full max-w-lg overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-2xl">
+        <form data-search-form class="flex items-center gap-2 border-b border-stone-100 px-4 py-3">
+            <svg class="h-5 w-5 shrink-0 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.6-3.6" />
+            </svg>
+
+            <input type="search" name="q" data-search-input autocomplete="off" enterkeyhint="search"
+                   placeholder="Փնտրել վերնագիր կամ տող…"
+                   class="w-full bg-transparent py-1 text-base text-stone-900 placeholder-stone-400 focus:outline-none">
+
+            <button type="button" data-search-close
+                    class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 transition hover:bg-stone-100 hover:text-stone-700"
+                    aria-label="Փակել">✕</button>
+        </form>
+
+        <div data-search-results class="max-h-[60vh] overflow-y-auto p-2"></div>
+    </div>
+</div>
 
 <main class="mx-auto max-w-3xl px-4 py-6">
     @yield('content')

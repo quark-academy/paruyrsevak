@@ -94,7 +94,7 @@ function cycleRate() {
                 <!-- 10 seconds back (the narrowest phones drop this pair) -->
                 <button
                     type="button"
-                    class="hidden h-11 w-11 place-items-center rounded-full text-lg text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
+                    class="hidden h-11 w-11 place-items-center rounded-full text-xl text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
                     :disabled="disabled || duration <= 0"
                     title="10 վրկ հետ"
                     aria-label="10 վրկ հետ"
@@ -118,7 +118,7 @@ function cycleRate() {
                 <!-- 10 seconds forward -->
                 <button
                     type="button"
-                    class="hidden h-11 w-11 place-items-center rounded-full text-lg text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
+                    class="hidden h-11 w-11 place-items-center rounded-full text-xl text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
                     :disabled="disabled || duration <= 0"
                     title="10 վրկ առաջ"
                     aria-label="10 վրկ առաջ"

@@ -103,6 +103,38 @@ class PublicPoemPageTest extends TestCase
             ->assertDontSee('if (!audio || words.length === 0) return;', false);
     }
 
+    public function test_the_catalogue_hands_out_more_cards_instead_of_a_second_page(): void
+    {
+        // The oldest poem lands on the second slice.
+        Poem::factory()->create(['title' => 'Հին բանաստեղծություն', 'slug' => 'old-poem']);
+        Poem::factory()->count(12)->create();
+
+        $page = $this->get('/')->assertOk();
+
+        $this->assertStringContainsString('data-load-more', (string) $page->getContent());
+        $this->assertStringContainsString('page=2', (string) $page->viewData('moreUrl'));
+        $this->assertStringNotContainsString('Հին բանաստեղծություն', (string) $page->getContent());
+
+        // The button asks the same URL and receives only the cards, plus the URL
+        // of the slice after this one in a header (empty: there is none).
+        $fragment = $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->get('/?page=2')
+            ->assertOk();
+
+        $fragment->assertHeader('X-Next-Page', '');
+        $this->assertStringNotContainsString('<html', (string) $fragment->getContent());
+        $this->assertStringContainsString('Հին բանաստեղծություն', (string) $fragment->getContent());
+    }
+
+    public function test_the_header_carries_the_search_icon_and_its_modal(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-search-open', false)
+            ->assertSee('id="search-modal"', false)
+            ->assertSee(route('api.search'), false);
+    }
+
     public function test_the_hero_offers_a_play_shortcut_and_aggregate_numbers(): void
     {
         $poem = Poem::factory()->create(['slug' => 'hero-poem', 'plays_count' => 7]);

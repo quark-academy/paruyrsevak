@@ -117,35 +117,18 @@
                 </a>
             </div>
         @else
-            <div class="grid gap-1.5 sm:grid-cols-2">
-                @foreach ($poems as $poem)
-                    <a href="{{ \App\Support\Seo::poemUrl($poem) }}"
-                       class="group flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm transition hover:border-amber-200 hover:shadow-md hover:shadow-stone-900/5">
-                        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-stone-200 text-[11px] text-stone-500 transition group-hover:border-transparent group-hover:bg-stone-900 group-hover:text-amber-200">
-                            ▶
-                        </span>
+            <div data-cards class="grid gap-1.5 sm:grid-cols-2">
+                @include('poems._cards', ['poems' => $poems])
+            </div>
 
-                        <span class="min-w-0 flex-1">
-                            <span class="block text-sm font-semibold leading-snug">{{ $poem->title }}</span>
-
-                            <span class="mt-0.5 hidden text-xs leading-relaxed text-stone-500 sm:block">
-                                {{ $poem->excerpt(90) }}
-                            </span>
-
-                            <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-stone-400">
-                                <span class="rounded-full px-1.5 py-0.5 font-medium {{ $poem->is_original ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800' }}">
-                                    {{ $poem->voiceSourceLabel() }}
-                                </span>
-                                <span class="tabular-nums" title="Լսումների քանակ">▶ {{ $poem->playsLabel() }} լսում</span>
-                            </span>
-                        </span>
+            @if ($moreUrl)
+                <div class="mt-5 text-center">
+                    <a href="{{ $moreUrl }}" data-load-more
+                       class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition hover:border-amber-200 hover:text-stone-900">
+                        Ցուցադրել ավելին
                     </a>
-                @endforeach
-            </div>
-
-            <div class="mt-5">
-                {{ $poems->links() }}
-            </div>
+                </div>
+            @endif
         @endif
     </section>
 @endsection
@@ -201,6 +184,57 @@
 
         random.disabled = false;
         random.classList.remove('opacity-60');
+    });
+})();
+
+// "Load more": the same URL answers with just the next slice of cards, so the
+// catalogue never sends the visitor to a second page. Without JavaScript the
+// button is a plain link and still works.
+(function () {
+    const button = document.querySelector('[data-load-more]');
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener('click', async function (event) {
+        event.preventDefault();
+
+        const url = button.getAttribute('href');
+        const list = document.querySelector('[data-cards]');
+
+        if (!url || !list || button.dataset.loading) {
+            return;
+        }
+
+        button.dataset.loading = '1';
+        button.classList.add('opacity-60');
+
+        try {
+            const response = await fetch(url, {
+                headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (!response.ok) {
+                throw new Error('load more failed');
+            }
+
+            list.insertAdjacentHTML('beforeend', await response.text());
+
+            const next = response.headers.get('X-Next-Page');
+
+            if (next) {
+                button.setAttribute('href', next);
+            } else {
+                button.remove();
+            }
+        } catch (error) {
+            // Anything unexpected: let the browser do the plain navigation.
+            window.location.href = url;
+        } finally {
+            delete button.dataset.loading;
+            button.classList.remove('opacity-60');
+        }
     });
 })();
 </script>

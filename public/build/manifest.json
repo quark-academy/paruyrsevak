@@ -4,7 +4,7 @@
     "name": "gestures"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BD_FGwBP.css",
+    "file": "assets/app-DoetHoqp.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,7 +13,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-Ib5rJhwg.js",
+    "file": "assets/app-Crj-ElYU.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -22,7 +22,7 @@
     ]
   },
   "resources/js/poem-shorts.js": {
-    "file": "assets/poem-shorts-BYTiTZhn.js",
+    "file": "assets/poem-shorts-D2LK8clU.js",
     "name": "poem-shorts",
     "src": "resources/js/poem-shorts.js",
     "isEntry": true,

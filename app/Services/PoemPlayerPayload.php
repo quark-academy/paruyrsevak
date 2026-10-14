@@ -66,6 +66,8 @@ class PoemPlayerPayload
                 ? route('api.poems.generate', ['poem' => $poem])
                 : null,
             'randomUrl' => route('api.poems.random'),
+            // The header search modal lives on every page, the player included.
+            'searchUrl' => route('api.search'),
             // Player preferences: defaults from config, the visitor's own
             // choice lives in the browser (localStorage) and wins on load.
             'prefs' => [
