@@ -164,11 +164,12 @@ class PublicPoemPageTest extends TestCase
 
         $this->get('/')
             ->assertOk()
-            ->assertSee('Ձայնագրությունների արխիվ')
-            ->assertSee('Սկսել լսելը')
-            ->assertSee('data-random-poem', false)
+            ->assertSee('Սկսել վայելել')
+            // The one control of the hero is the play button (aria-label), and
+            // it carries the flag the catalogue uses to arm autoplay.
+            ->assertSee('aria-label="Սկսել վայելել"', false)
+            ->assertSee('data-start-listening', false)
             ->assertSee('▶ 7 լսում', false)
-            ->assertSee(route('api.poems.random'), false)
             ->assertSee(Seo::poemUrl($poem), false);
     }
 
@@ -176,8 +177,8 @@ class PublicPoemPageTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Ձայնագրությունների արխիվ')
-            ->assertDontSee('Սկսել լսելը');
+            ->assertDontSee('Սկսել վայելել')
+            ->assertDontSee('data-start-listening', false);
     }
 
     public function test_the_source_chips_filter_the_catalogue(): void

@@ -20,8 +20,10 @@
         };
     @endphp
 
-    {{-- Hero: on a phone this is the full width background with the buttons and
-         the search; the texts are part of the desktop layout. --}}
+    {{-- Hero: on a phone this is the full width background with the button and
+         the texts follow the layout of a player — the name, the line about the
+         recording, the numbers — and the single play control sits on the right
+         of all of it on a wide screen. --}}
     <section class="relative -mx-4 -mt-6 overflow-hidden bg-[#0b0a09] px-5 py-5 text-stone-100 shadow-xl shadow-stone-900/10 sm:mx-0 sm:mt-0 sm:rounded-3xl sm:px-8 sm:py-8">
         <div class="pointer-events-none absolute inset-0"
              style="background: radial-gradient(120% 90% at 12% 0%, rgba(232,196,106,0.18) 0%, rgba(11,10,9,0) 62%);"></div>
@@ -30,28 +32,39 @@
         <img src="{{ asset('images/sevak-logo.png') }}" alt="" aria-hidden="true"
              class="pointer-events-none absolute -right-4 -top-6 h-40 w-40 select-none opacity-[0.06] sm:-right-6 sm:-top-10 sm:h-56 sm:w-56">
 
-        <div class="relative">
-            <h1 class="mt-2.5 hidden text-3xl font-bold leading-tight sm:block sm:text-4xl">Պարույր Սևակ</h1>
+        <div class="relative flex items-center gap-6 sm:justify-between">
+            {{-- The texts are the desktop half of the player; on a phone the
+                 wrapper is out of the layout altogether, so the play pill takes
+                 the full width of the band without a gap pushing it out. --}}
+            <div class="hidden min-w-0 sm:block">
+                <h1 class="hidden text-3xl font-bold leading-tight sm:block sm:text-4xl">Պարույր Սևակ</h1>
 
-            <p class="mt-1.5 hidden max-w-xl text-sm leading-relaxed text-stone-300 sm:block">
-                Լսիր բանաստեղծությունները՝  հեղինակի կատարմամբ։
-            </p>
+                <p class="mt-2 hidden max-w-xl text-sm leading-relaxed text-stone-300 sm:block">
+                    Լսիր բանաստեղծությունները՝ հեղինակի կատարմամբ։
+                </p>
 
-            <div class="flex items-center gap-2 sm:mt-5">
-                @if ($listenPoem)
-                    <a href="{{ \App\Support\Seo::poemUrl($listenPoem) }}" data-start-listening
-                       class="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 transition active:scale-[0.98] sm:flex-none sm:px-5"
-                       style="background-color: #e8c46a;">
-                        ▶ <span class="sm:hidden">Սկսել</span><span class="hidden sm:inline">Սկսել վայելել</span>
-                    </a>
-                @endif
-
+                <p class="mt-4 hidden text-xs tabular-nums text-white/45 sm:block">
+                    {{ number_format((int) $stats['recordings'], 0, ',', ' ') }} ձայնագրություն
+                    · {{ number_format((int) $stats['plays'], 0, ',', ' ') }} լսում
+                </p>
             </div>
 
-            <p class="mt-4 hidden text-xs tabular-nums text-white/45 sm:block">
-                {{ number_format((int) $stats['recordings'], 0, ',', ' ') }} ձայնագրություն
-                · {{ number_format((int) $stats['plays'], 0, ',', ' ') }} լսում
-            </p>
+            @if ($listenPoem)
+                {{-- The one play control of the page: a pill to tap on a phone,
+                     the round button of a player on a wide screen. The colour is
+                     an inline hex, so it reads as the primary control even in a
+                     browser that mishandles the modern colour functions. --}}
+                <a href="{{ \App\Support\Seo::poemUrl($listenPoem) }}" data-start-listening
+                   aria-label="Սկսել վայելել" title="Սկսել վայելել"
+                   class="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 outline-none transition hover:brightness-105 focus-visible:ring-4 focus-visible:ring-amber-200/70 active:scale-[0.98] sm:h-20 sm:w-20 sm:p-0 sm:ring-8 sm:ring-amber-300/10 sm:hover:ring-amber-300/20"
+                   style="background-color: #e8c46a;">
+                    <svg class="h-4 w-4 sm:h-7 sm:w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.3-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14Z"/>
+                    </svg>
+
+                    <span class="sm:hidden">Սկսել վայելել</span>
+                </a>
+            @endif
         </div>
     </section>
 
