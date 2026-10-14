@@ -126,6 +126,24 @@ class PublicPoemPageTest extends TestCase
         $fragment->assertHeader('X-Next-Page', '');
         $this->assertStringNotContainsString('<html', (string) $fragment->getContent());
         $this->assertStringContainsString('Հին բանաստեղծություն', (string) $fragment->getContent());
+
+        // The headers above stay with the test client: drop them, or the next
+        // request would be an ajax one as well.
+        $this->flushHeaders();
+
+        // The very same slice can be asked for with the explicit flag: that is
+        // what a proxy cannot strip away from the request.
+        $flagged = $this->get('/?page=2&fragment=1')->assertOk();
+
+        $this->assertStringNotContainsString('<html', (string) $flagged->getContent());
+        $this->assertStringContainsString('Հին բանաստեղծություն', (string) $flagged->getContent());
+
+        // Without either of them the page stays a full, styled document — the
+        // path a visitor without JavaScript takes.
+        $plain = $this->get('/?page=2')->assertOk();
+
+        $this->assertStringContainsString('<html', (string) $plain->getContent());
+        $this->assertStringContainsString('data-load-more', (string) $plain->getContent());
     }
 
     public function test_the_header_carries_the_search_icon_and_its_modal(): void

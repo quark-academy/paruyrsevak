@@ -51,11 +51,19 @@ class PoemController extends Controller
 
         $isFiltered = $term !== '' || $source !== '';
 
-        // More of the catalogue, in the same query shape: the button below the
-        // list keeps pointing here until the last slice arrived.
-        $moreUrl = $poems->nextPageUrl();
+        // More of the catalogue, in the same query shape. Built from the home
+        // route so the URL needs no redirect: the bare "/sevak?page=2" form
+        // would cost an extra round trip before the slice arrives.
+        $moreUrl = $poems->hasMorePages()
+            ? route('home', array_merge($request->query(), ['page' => $poems->currentPage() + 1]))
+            : null;
 
-        if ($request->ajax()) {
+        // The button asks this very URL, marked as a fragment: only the cards
+        // come back. The flag is read from the query as well as from the ajax
+        // header, because a proxy that strips the header would otherwise answer
+        // with a whole page — and pasting a whole page into the list is what
+        // tears the layout apart.
+        if ($request->ajax() || $request->boolean('fragment')) {
             return response()
                 ->view('poems._cards', ['poems' => $poems])
                 ->header('X-Next-Page', $moreUrl ?? '');

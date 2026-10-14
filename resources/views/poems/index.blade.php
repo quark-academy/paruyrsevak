@@ -193,8 +193,10 @@
 })();
 
 // "Load more": the same URL answers with just the next slice of cards, so the
-// catalogue never sends the visitor to a second page. Without JavaScript the
-// button is a plain link and still works.
+// catalogue never sends the visitor to a second page. The request says so
+// explicitly (the fragment flag), because a proxy is free to drop the ajax
+// header — and a whole page pasted into the list is worse than no button.
+// Without JavaScript the button is a plain link and still works.
 (function () {
     const button = document.querySelector('[data-load-more]');
 
@@ -202,21 +204,26 @@
         return;
     }
 
+    const label = button.innerHTML;
+
     button.addEventListener('click', async function (event) {
         event.preventDefault();
 
-        const url = button.getAttribute('href');
         const list = document.querySelector('[data-cards]');
+        const href = button.getAttribute('href');
 
-        if (!url || !list || button.dataset.loading) {
+        if (!href || !list || button.dataset.loading) {
             return;
         }
+
+        const url = new URL(href, window.location.href);
+        url.searchParams.set('fragment', '1');
 
         button.dataset.loading = '1';
         button.classList.add('opacity-60');
 
         try {
-            const response = await fetch(url, {
+            const response = await fetch(url.toString(), {
                 headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
             });
 
@@ -224,7 +231,14 @@
                 throw new Error('load more failed');
             }
 
-            list.insertAdjacentHTML('beforeend', await response.text());
+            const html = await response.text();
+
+            // Safety net: never paste a whole document into the grid.
+            if (/<html[\s>]/i.test(html)) {
+                throw new Error('a whole page came back');
+            }
+
+            list.insertAdjacentHTML('beforeend', html);
 
             const next = response.headers.get('X-Next-Page');
 
@@ -234,8 +248,13 @@
                 button.remove();
             }
         } catch (error) {
-            // Anything unexpected: let the browser do the plain navigation.
-            window.location.href = url;
+            // Stay where the visitor is and say what happened: jumping to a
+            // second page is exactly what this button exists to avoid.
+            button.innerHTML = 'Չհաջողվեց բեռնել, փորձիր նորից';
+
+            window.setTimeout(function () {
+                button.innerHTML = label;
+            }, 2600);
         } finally {
             delete button.dataset.loading;
             button.classList.remove('opacity-60');
