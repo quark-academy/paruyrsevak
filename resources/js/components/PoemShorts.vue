@@ -16,6 +16,14 @@ const props = defineProps({
 
 const source = props.payload;
 
+/**
+ * The poem on screen. It starts as the server rendered payload and is replaced
+ * in place when the visitor swipes to another poem (see navigate): keeping one
+ * document alive keeps the browser's user gesture, and that is what allows
+ * audible autoplay between poems without asking for a tap every time.
+ */
+const poem = ref({ ...source });
+
 /** UI state machine: idle | loading | generating | ready | missing | error */
 const state = ref('idle');
 const message = ref('');
@@ -144,10 +152,12 @@ const statusText = computed(() => {
     }
 });
 
-const background = computed(() => source.background || '#0b0a09');
-const gold = computed(() => source.gold || '#e8c46a');
+const background = computed(() => poem.value.background || '#0b0a09');
+const gold = computed(() => poem.value.gold || '#e8c46a');
 
 function applyPayload(data) {
+    poem.value = { ...poem.value, ...data };
+
     if (Array.isArray(data.lines)) {
         linesData.value = data.lines;
     }
@@ -163,6 +173,20 @@ function applyPayload(data) {
     if (typeof data.playsLabel === 'string') {
         playsLabel.value = data.playsLabel;
     }
+
+    // Another recording means another listen (the server de-duplicates
+    // visitors) and a fresh autoplay intent.
+    playTracked = false;
+    userPaused.value = false;
+
+    if (typeof data.title === 'string' && data.title) {
+        document.title = data.title;
+    }
+
+    // Keep the address-bar/canonical pair in sync while swapping in place.
+    if (typeof data.canonical === 'string' && data.canonical) {
+        document.querySelector('link[rel="canonical"]')?.setAttribute('href', data.canonical);
+    }
 }
 
 /**
@@ -170,14 +194,14 @@ function applyPayload(data) {
  * counter must never break playback.
  */
 async function trackPlay() {
-    if (playTracked || !source.playsUrl) {
+    if (playTracked || !poem.value.playsUrl) {
         return;
     }
 
     playTracked = true;
 
     try {
-        const response = await fetch(source.playsUrl, {
+        const response = await fetch(poem.value.playsUrl, {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -196,7 +220,7 @@ async function trackPlay() {
 }
 
 async function generate() {
-    if (!source.generateUrl) {
+    if (!poem.value.generateUrl) {
         state.value = 'missing';
 
         return;
@@ -206,7 +230,7 @@ async function generate() {
     message.value = '';
 
     try {
-        const response = await fetch(source.generateUrl, {
+        const response = await fetch(poem.value.generateUrl, {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -249,13 +273,105 @@ function reload() {
     generate();
 }
 
-function go(url) {
-    if (url) {
-        window.location.href = url;
+let navigating = false;
+
+/**
+ * Swap to another poem inside the same document.
+ *
+ * A full page load throws the visitor's gesture away, and the browser then
+ * refuses audible autoplay — which is exactly why the player used to ask for a
+ * tap on every poem. An in-place swap keeps the document (and its activation),
+ * so the next recording simply starts with sound.
+ */
+async function navigate(target, { push = true } = {}) {
+    if (!target || navigating) {
+        return;
+    }
+
+    if (!target.playerUrl) {
+        // No payload URL (older link, or an unexpected shape): let the browser
+        // navigate normally.
+        go(target.url);
+
+        return;
+    }
+
+    navigating = true;
+    state.value = 'loading';
+
+    try {
+        const response = await fetch(target.playerUrl, {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('payload unavailable');
+        }
+
+        const data = await response.json();
+
+        applyPayload(data);
+
+        if (push && data.canonical) {
+            window.history.pushState(
+                { slug: data.slug, playerUrl: target.playerUrl, url: target.url },
+                '',
+                data.canonical,
+            );
+        }
+
+        if (audioUrl.value) {
+            state.value = 'loading';
+            load(audioUrl.value);
+        } else if (poem.value.generateUrl) {
+            generate();
+        } else {
+            state.value = 'missing';
+        }
+    } catch (error) {
+        // Anything unexpected: hand the navigation back to the browser.
+        go(target.url);
+    } finally {
+        navigating = false;
     }
 }
 
-let navigating = false;
+/**
+ * A string is a plain URL, an object carries its own payload URL.
+ */
+function go(target) {
+    if (!target) {
+        return;
+    }
+
+    if (typeof target === 'string') {
+        window.location.href = target;
+
+        return;
+    }
+
+    navigate(target);
+}
+
+/**
+ * Back/forward buttons (and the iOS back swipe): render the entry the address
+ * bar points at, without pushing another one.
+ */
+function onPopState(event) {
+    const stored = event.state;
+
+    if (!stored?.playerUrl) {
+        // An entry from outside the player (e.g. the catalogue): reload it.
+        window.location.reload();
+
+        return;
+    }
+
+    navigate({ playerUrl: stored.playerUrl, url: stored.url }, { push: false });
+}
 
 /**
  * Next poem: the sequential neighbour, or a fresh random one in shuffle mode.
@@ -266,8 +382,8 @@ async function goNext() {
         return;
     }
 
-    if (!shuffle.value || !source.randomUrl) {
-        go(source.next?.url);
+    if (!shuffle.value || !poem.value.randomUrl) {
+        go(poem.value.next);
 
         return;
     }
@@ -275,10 +391,10 @@ async function goNext() {
     navigating = true;
 
     try {
-        const url = new URL(source.randomUrl, window.location.origin);
+        const url = new URL(poem.value.randomUrl, window.location.origin);
 
-        if (source.slug) {
-            url.searchParams.set('exclude', source.slug);
+        if (poem.value.slug) {
+            url.searchParams.set('exclude', poem.value.slug);
         }
 
         const response = await fetch(url.toString(), {
@@ -290,6 +406,14 @@ async function goNext() {
 
         const data = await response.json().catch(() => ({}));
 
+        navigating = false;
+
+        if (data.playerUrl) {
+            navigate(data);
+
+            return;
+        }
+
         if (data.url) {
             window.location.href = data.url;
 
@@ -300,15 +424,15 @@ async function goNext() {
     }
 
     navigating = false;
-    go(source.next?.url);
+    go(poem.value.next);
 }
 
 async function share() {
-    const url = source.canonical || window.location.href;
+    const url = poem.value.canonical || window.location.href;
 
     if (navigator.share) {
         try {
-            await navigator.share({ title: source.title, url });
+            await navigator.share({ title: poem.value.title, url });
 
             return;
         } catch (error) {
@@ -332,7 +456,7 @@ function onKeydown(event) {
     if (event.code === 'ArrowDown') {
         goNext();
     } else if (event.code === 'ArrowUp') {
-        go(source.prev?.url);
+        go(poem.value.prev);
     } else if (event.code === 'KeyL') {
         setMode(prefLoop.value ? 'sequential' : 'loop');
     } else if (event.code === 'KeyS') {
@@ -345,7 +469,7 @@ function onKeydown(event) {
 
 useSwipe({
     onUp: () => goNext(),
-    onDown: () => go(source.prev?.url),
+    onDown: () => go(poem.value.prev),
 });
 
 // Repeat: keep the audio element looping whenever the visitor asks for it.
@@ -422,6 +546,7 @@ watch(playing, (isPlaying) => {
 
 onMounted(() => {
     window.addEventListener('keydown', onKeydown);
+    window.addEventListener('popstate', onPopState);
 
     if (audioUrl.value) {
         state.value = 'loading';
@@ -430,7 +555,7 @@ onMounted(() => {
         return;
     }
 
-    if (source.generateUrl) {
+    if (poem.value.generateUrl) {
         generate();
 
         return;
@@ -441,6 +566,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown);
+    window.removeEventListener('popstate', onPopState);
 });
 </script>
 
@@ -468,15 +594,15 @@ onBeforeUnmount(() => {
             class="relative z-20 flex items-center justify-between gap-2 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-1"
         >
             <a
-                :href="source.homeUrl || '/'"
+                :href="poem.homeUrl || '/'"
                 class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs font-bold"
                 aria-label="Գլխավոր"
             >ՊՍ</a>
 
             <div class="min-w-0 text-center">
-                <h1 class="truncate text-sm font-semibold">{{ source.title }}</h1>
+                <h1 class="truncate text-sm font-semibold">{{ poem.title }}</h1>
                 <p class="text-[10px] uppercase tracking-widest text-white/35">
-                    {{ source.author }}<template v-if="playsLabel"> · ▶ {{ playsLabel }}</template>
+                    {{ poem.author }}<template v-if="playsLabel"> · ▶ {{ playsLabel }}</template>
                 </p>
             </div>
 
@@ -487,14 +613,6 @@ onBeforeUnmount(() => {
                 @click="share"
             >⤴</button>
         </header>
-
-        <!-- muted autoplay: the sound arrives with the first touch -->
-        <button
-            v-if="mutedAutoplay"
-            type="button"
-            class="absolute inset-x-0 top-[4.5rem] z-30 mx-auto w-fit rounded-full border border-amber-300/40 bg-amber-300/15 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur"
-            @click="unmuteNow"
-        >🔇 Հպվիր՝ ձայնը միացնելու համար</button>
 
         <!-- portrait -->
         <div class="relative z-10 flex min-h-0 flex-1 items-center justify-center px-10">
@@ -526,6 +644,7 @@ onBeforeUnmount(() => {
         <section class="relative z-10">
             <KaraokeLyrics
                 v-if="showLyrics"
+                :key="poem.slug"
                 :lines="lines"
                 :active-index="activeIndex"
                 :state-for="stateFor"
@@ -533,13 +652,13 @@ onBeforeUnmount(() => {
 
             <div v-else-if="showRawText" class="karaoke-mask max-h-[38dvh] overflow-y-auto px-6 py-4">
                 <p class="whitespace-pre-line text-center text-base leading-relaxed text-white/45">
-                    {{ source.content }}
+                    {{ poem.content }}
                 </p>
 
                 <div v-if="state === 'missing' || state === 'error'" class="mt-4 text-center">
                     <p class="text-xs text-white/40">{{ statusText }}</p>
                     <button
-                        v-if="source.generateUrl"
+                        v-if="poem.generateUrl"
                         type="button"
                         class="mt-2 rounded-full border border-amber-300/40 px-4 py-1.5 text-xs font-medium text-amber-200"
                         @click="reload"
@@ -578,7 +697,7 @@ onBeforeUnmount(() => {
 
             <!-- Desktop only: the mobile player stays clean (see the walkthrough). -->
             <div class="mt-2 hidden items-center justify-between gap-2 text-[10px] text-white/30 sm:flex">
-                <a :href="source.readingUrl" class="shrink-0 underline-offset-2 hover:text-white/60 hover:underline">
+                <a :href="poem.readingUrl" class="shrink-0 underline-offset-2 hover:text-white/60 hover:underline">
                     Ամբողջ տեքստը
                 </a>
                 <span class="truncate">{{ navHint }}</span>
@@ -590,16 +709,16 @@ onBeforeUnmount(() => {
             <button
                 type="button"
                 class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-sm backdrop-blur transition disabled:opacity-25"
-                :disabled="!source.prev"
+                :disabled="!poem.prev"
                 aria-label="Նախորդը"
-                @click="go(source.prev?.url)"
+                @click="go(poem.prev)"
             >
                 ⌃
             </button>
             <button
                 type="button"
                 class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/30 text-sm backdrop-blur transition disabled:opacity-25"
-                :disabled="!source.next && !shuffle"
+                :disabled="!poem.next && !shuffle"
                 :aria-label="shuffle ? 'Պատահական բանաստեղծություն' : 'Հաջորդը'"
                 @click="goNext"
             >

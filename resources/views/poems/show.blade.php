@@ -59,10 +59,6 @@
                         <option value="0.75">0.75×</option>
                     </select>
                 </div>
-
-                <p id="sound-hint" hidden class="mt-2 text-[11px] text-amber-200">
-                    🔇 Հպվիր էկրանին (կամ սեղմիր ▶)՝ ձայնը միացնելու համար։
-                </p>
             </div>
         @else
             <div class="mb-5 rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-500">
@@ -232,14 +228,10 @@
 
             if (!autoplay) return;
 
-            const hint = document.getElementById('sound-hint');
-
             // What the first interaction does: sound on, playing.
             window.sevakPoem = {
                 wake() {
                     audio.muted = false;
-
-                    if (hint) hint.hidden = true;
 
                     if (audio.paused) {
                         audio.play().catch(() => {});
@@ -281,15 +273,11 @@
             audio.play().catch(async () => {
                 audio.muted = true;
 
-                if (hint) hint.hidden = false;
-
                 try {
                     await audio.play();
                 } catch (error) {
                     // Even muted playback was refused: leave it to the visitor.
                     audio.muted = false;
-
-                    if (hint) hint.hidden = true;
                 }
 
                 armGesture();

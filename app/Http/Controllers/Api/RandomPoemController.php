@@ -38,6 +38,7 @@ class RandomPoemController extends Controller
             'slug' => (string) $poem->slug,
             'title' => (string) $poem->title,
             'url' => Seo::poemUrl($poem),
+            'playerUrl' => route('api.poems.player', ['poem' => $poem]),
         ]);
     }
 }

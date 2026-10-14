@@ -50,6 +50,20 @@ class PoemPlayerApiTest extends TestCase
         $this->assertNotNull($poem->fresh()->audioUrl());
     }
 
+    public function test_neighbours_carry_the_url_of_their_own_payload(): void
+    {
+        // The player swaps poems inside the same document, so each neighbour
+        // must tell it where to fetch the next payload from.
+        $first = Poem::factory()->create(['slug' => 'first-poem']);
+        Poem::factory()->create(['slug' => 'second-poem']);
+
+        $this->getJson('/api/poems/second-poem')
+            ->assertOk()
+            ->assertJsonPath('prev.slug', 'first-poem')
+            ->assertJsonPath('prev.playerUrl', route('api.poems.player', ['poem' => $first]))
+            ->assertJsonPath('next', null);
+    }
+
     public function test_generation_is_forbidden_when_public_generation_is_disabled(): void
     {
         config()->set('poems.public_generation', false);

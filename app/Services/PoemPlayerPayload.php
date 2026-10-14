@@ -141,6 +141,10 @@ class PoemPlayerPayload
             'slug' => $neighbour->slug,
             'title' => $neighbour->title,
             'url' => Seo::poemUrl($neighbour),
+            // The player swaps poems inside the same document (so the browser
+            // keeps the visitor's gesture and audio autoplay keeps working):
+            // the neighbour therefore carries its own payload URL.
+            'playerUrl' => route('api.poems.player', ['poem' => $neighbour]),
         ];
     }
 }

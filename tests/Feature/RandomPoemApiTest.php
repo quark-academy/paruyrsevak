@@ -29,7 +29,9 @@ class RandomPoemApiTest extends TestCase
         $this->getJson('/api/poems/random')
             ->assertOk()
             ->assertJsonPath('slug', 'only-poem')
-            ->assertJsonPath('url', Seo::poemUrl($poem));
+            ->assertJsonPath('url', Seo::poemUrl($poem))
+            // Shuffle also swaps in place, so it needs the payload URL too.
+            ->assertJsonPath('playerUrl', route('api.poems.player', ['poem' => $poem]));
     }
 
     public function test_the_poem_being_listened_to_is_excluded(): void
