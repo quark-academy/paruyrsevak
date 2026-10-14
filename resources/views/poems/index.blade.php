@@ -46,7 +46,7 @@
                     <a href="{{ \App\Support\Seo::poemUrl($listenPoem) }}" data-start-listening
                        class="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 transition active:scale-[0.98] sm:flex-none sm:px-5"
                        style="background-color: #e8c46a;">
-                        ▶ <span class="sm:hidden">Սկսել</span><span class="hidden sm:inline">Սկսել լսելը</span>
+                        ▶ <span class="sm:hidden">Սկսել</span><span class="hidden sm:inline">Սկսել վայելել</span>
                     </a>
                 @endif
 
