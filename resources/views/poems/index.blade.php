@@ -60,19 +60,6 @@
                 {{ number_format((int) $stats['recordings'], 0, ',', ' ') }} ձայնագրություն
                 · {{ number_format((int) $stats['plays'], 0, ',', ' ') }} լսում
             </p>
-
-            <form method="GET" action="{{ route('poems.index') }}"
-                  class="mt-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-1.5 transition focus-within:border-amber-300/40 sm:mt-4">
-                <span class="text-white/30">⌕</span>
-                <input type="search" name="q" value="{{ $term }}" placeholder="Փնտրել վերնագիր կամ տող…"
-                       class="w-full bg-transparent py-2 text-sm text-stone-100 placeholder-white/35 focus:outline-none">
-                @if ($source !== '')
-                    <input type="hidden" name="source" value="{{ $source }}">
-                @endif
-                @if ($sort !== 'new')
-                    <input type="hidden" name="sort" value="{{ $sort }}">
-                @endif
-            </form>
         </div>
     </section>
 
