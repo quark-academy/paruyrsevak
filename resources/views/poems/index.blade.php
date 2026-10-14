@@ -122,9 +122,14 @@
             </div>
 
             @if ($moreUrl)
+                {{-- Painted like the hero's primary button: the colour is an
+                     inline hex, so the button reads as a button even in a
+                     browser that mishandles the modern colour functions. --}}
                 <div class="mt-5 text-center">
                     <a href="{{ $moreUrl }}" data-load-more
-                       class="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition hover:border-amber-200 hover:text-stone-900">
+                       class="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 transition active:scale-[0.98]"
+                       style="background-color: #e8c46a;">
+                        <span aria-hidden="true">↓</span>
                         Ցուցադրել ավելին
                     </a>
                 </div>

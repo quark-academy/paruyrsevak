@@ -112,6 +112,8 @@ class PublicPoemPageTest extends TestCase
         $page = $this->get('/')->assertOk();
 
         $this->assertStringContainsString('data-load-more', (string) $page->getContent());
+        // The button carries its own colour, like the hero's primary action.
+        $this->assertStringContainsString('background-color: #e8c46a', (string) $page->getContent());
         $this->assertStringContainsString('page=2', (string) $page->viewData('moreUrl'));
         $this->assertStringNotContainsString('Հին բանաստեղծություն', (string) $page->getContent());
 
