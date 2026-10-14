@@ -59,6 +59,10 @@
                         <option value="0.75">0.75×</option>
                     </select>
                 </div>
+
+                <p id="sound-hint" hidden class="mt-2 text-[11px] text-amber-200">
+                    🔇 Հպվիր էկրանին (կամ սեղմիր ▶)՝ ձայնը միացնելու համար։
+                </p>
             </div>
         @else
             <div class="mb-5 rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-500">
@@ -126,7 +130,18 @@
                 setActive(found);
             };
 
-            toggle.addEventListener('click', () => { audio.paused ? audio.play() : audio.pause(); });
+            toggle.addEventListener('click', () => {
+                const helper = window.sevakPoem;
+
+                // A muted autoplay stream is running: the tap asks for sound.
+                if (helper && (audio.paused || audio.muted)) {
+                    helper.wake();
+
+                    return;
+                }
+
+                audio.paused ? audio.play() : audio.pause();
+            });
             audio.addEventListener('play', () => { toggle.textContent = '❚❚'; });
             audio.addEventListener('pause', () => { toggle.textContent = '▶'; });
             audio.addEventListener('loadedmetadata', () => { total.textContent = fmt(audio.duration); });
@@ -217,10 +232,22 @@
 
             if (!autoplay) return;
 
-            // Browsers may refuse audible autoplay without a gesture. Instead
-            // of stopping there, the recording starts on the visitor's first
-            // interaction — which is what autoplay should feel like on a phone.
-            audio.play().catch(() => {
+            const hint = document.getElementById('sound-hint');
+
+            // What the first interaction does: sound on, playing.
+            window.sevakPoem = {
+                wake() {
+                    audio.muted = false;
+
+                    if (hint) hint.hidden = true;
+
+                    if (audio.paused) {
+                        audio.play().catch(() => {});
+                    }
+                },
+            };
+
+            const armGesture = () => {
                 const events = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
 
                 const resume = (event) => {
@@ -235,7 +262,7 @@
                     }
 
                     stopResume();
-                    audio.play().catch(() => {});
+                    window.sevakPoem.wake();
                 };
 
                 const stopResume = () => events.forEach(
@@ -245,6 +272,27 @@
                 events.forEach(
                     (name) => window.addEventListener(name, resume, { capture: true, passive: true }),
                 );
+            };
+
+            // Audible autoplay first (allowed once the visitor interacted with
+            // the document), then a muted stream — that IS allowed — whose
+            // sound comes back at the first interaction. That is as close to
+            // autoplay as phones get.
+            audio.play().catch(async () => {
+                audio.muted = true;
+
+                if (hint) hint.hidden = false;
+
+                try {
+                    await audio.play();
+                } catch (error) {
+                    // Even muted playback was refused: leave it to the visitor.
+                    audio.muted = false;
+
+                    if (hint) hint.hidden = true;
+                }
+
+                armGesture();
             });
         })();
         </script>

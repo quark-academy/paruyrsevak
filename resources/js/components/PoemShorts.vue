@@ -50,6 +50,9 @@ const {
     toggleMute,
     setLoop,
     playOnFirstGesture,
+    attemptAutoplay,
+    unmuteNow,
+    mutedAutoplay,
 } = useAudioPlayer();
 
 /**
@@ -75,10 +78,10 @@ function finishIntro() {
     showIntro.value = false;
     markIntroSeen();
 
-    // The tap that closes the walkthrough is a user gesture: start playing.
+    // The tap that closes the walkthrough is a user gesture: start playing
+    // (or give the muted autoplay stream its sound).
     if (state.value === 'ready') {
-        autoplayTried = true;
-        play();
+        unmuteNow();
     }
 }
 
@@ -348,7 +351,11 @@ useSwipe({
 // Repeat: keep the audio element looping whenever the visitor asks for it.
 watch(prefLoop, (value) => setLoop(value), { immediate: true });
 
-let autoplayTried = false;
+/**
+ * The visitor pressed pause themselves: autoplay must not fight that.
+ * A newly opened recording resets it.
+ */
+const userPaused = ref(false);
 
 watch(ready, (isReady) => {
     if (!isReady) {
@@ -357,13 +364,45 @@ watch(ready, (isReady) => {
 
     state.value = 'ready';
 
-    // Browsers only allow audible autoplay after a user gesture. When the
-    // attempt is refused, "blocked" turns on and the player offers a tap.
-    if (!autoplayTried && autoplay.value) {
-        autoplayTried = true;
-        play();
+    // Autoplay: audible when the browser allows playback after an interaction,
+    // otherwise muted until the visitor touches the page (attemptAutoplay).
+    if (autoplay.value && !userPaused.value && !playing.value) {
+        attemptAutoplay();
     }
 });
+
+// Switching autoplay on while reading should start the recording right away.
+watch(autoplay, (isOn) => {
+    if (isOn && !playing.value && !userPaused.value) {
+        attemptAutoplay();
+    }
+});
+
+// Another recording means a fresh autoplay intent.
+watch(audioUrl, () => {
+    userPaused.value = false;
+});
+
+/**
+ * The play button. While a muted autoplay stream runs, tapping it means
+ * "give me the sound" — pausing would only make the page feel broken.
+ */
+function onToggle() {
+    if (mutedAutoplay.value) {
+        unmuteNow();
+
+        return;
+    }
+
+    userPaused.value = playing.value;
+    toggle();
+}
+
+/** A manual mute/unmute by the visitor always wins over the autoplay fallback. */
+function onMute() {
+    mutedAutoplay.value = false;
+    toggleMute();
+}
 
 // The recording ended: repeat it (loop mode) or keep the stream going.
 watch(endedAt, () => {
@@ -449,6 +488,14 @@ onBeforeUnmount(() => {
             >⤴</button>
         </header>
 
+        <!-- muted autoplay: the sound arrives with the first touch -->
+        <button
+            v-if="mutedAutoplay"
+            type="button"
+            class="absolute inset-x-0 top-[4.5rem] z-30 mx-auto w-fit rounded-full border border-amber-300/40 bg-amber-300/15 px-4 py-1.5 text-xs font-medium text-amber-100 backdrop-blur"
+            @click="unmuteNow"
+        >🔇 Հպվիր՝ ձայնը միացնելու համար</button>
+
         <!-- portrait -->
         <div class="relative z-10 flex min-h-0 flex-1 items-center justify-center px-10">
             <div class="aspect-[200/260] h-[26dvh] max-h-60">
@@ -513,10 +560,10 @@ onBeforeUnmount(() => {
                 :muted="muted"
                 :disabled="state !== 'ready'"
                 :attention="autoplayBlocked"
-                @toggle="toggle"
+                @toggle="onToggle"
                 @seek="seekRatio"
                 @rate="setRate"
-                @mute="toggleMute"
+                @mute="onMute"
             />
 
             <!-- autoplay + playback mode: remembered between poems -->

@@ -23,6 +23,11 @@ export function useAudioPlayer() {
     const seeking = ref(false);
     /** Set when the browser refuses audible autoplay (needs a user gesture). */
     const blocked = ref(false);
+    /**
+     * Set when audible autoplay was refused and the player fell back to a
+     * muted stream: it keeps playing silently until the visitor interacts.
+     */
+    const mutedAutoplay = ref(false);
     /** Bumped every time the recording reaches its end (drives auto-advance). */
     const endedAt = ref(0);
 
@@ -39,16 +44,22 @@ export function useAudioPlayer() {
         const el = new Audio();
         el.preload = 'metadata';
         el.crossOrigin = 'anonymous';
+        el.muted = muted.value;
         el.volume = muted.value ? 0 : 1;
         el.loop = loop.value;
         el.playbackRate = rate.value;
 
         el.addEventListener('loadedmetadata', () => {
             duration.value = isFinite(el.duration) ? el.duration : 0;
+            // Do not wait for "canplay": with preload="metadata" some browsers
+            // (iOS Safari) only fire it once playback was requested, so the
+            // autoplay attempt never happened at all.
+            ready.value = true;
         });
         el.addEventListener('canplay', () => {
             ready.value = true;
             loading.value = false;
+            retryWhenPlayable();
         });
         el.addEventListener('play', () => { playing.value = true; });
         el.addEventListener('playing', () => { loading.value = false; });
@@ -120,12 +131,17 @@ export function useAudioPlayer() {
             .play()
             .then(() => {
                 blocked.value = false;
+                resumeAfterAbort = false;
             })
             .catch((error) => {
                 // Browsers only allow audible playback after a user gesture:
-                // remember it so the player can offer a "tap to listen" hint.
+                // remember it so the player knows it must ask for a tap.
                 playing.value = false;
                 blocked.value = error?.name === 'NotAllowedError';
+
+                // Not a policy decision: the call was interrupted because the
+                // media was not buffered yet. Play again once it can.
+                resumeAfterAbort = !blocked.value;
             });
     }
 
@@ -168,9 +184,73 @@ export function useAudioPlayer() {
     }
 
     function toggleMute() {
-        muted.value = !muted.value;
+        setMuted(!muted.value);
+    }
+
+    function setMuted(value) {
+        muted.value = Boolean(value);
+
         if (audio.value) {
+            audio.value.muted = muted.value;
             audio.value.volume = muted.value ? 0 : 1;
+        }
+    }
+
+    /**
+     * play() was interrupted because the media was not buffered yet (the
+     * browser aborts the call instead of waiting): play again at "canplay".
+     */
+    let resumeAfterAbort = false;
+
+    function retryWhenPlayable() {
+        if (!resumeAfterAbort) {
+            return;
+        }
+
+        resumeAfterAbort = false;
+        play();
+    }
+
+    /**
+     * Start a freshly opened recording without the visitor pressing anything.
+     *
+     * 1. Audible playback first — allowed as soon as the visitor interacted
+     *    with the document (a swipe or a tap on the previous poem).
+     * 2. If the browser refuses that, play muted: muted autoplay IS allowed.
+     *    The stream then runs silently and the first interaction turns the
+     *    sound on, which is the closest the web gets to autoplay on a phone.
+     */
+    async function attemptAutoplay() {
+        if (playing.value) {
+            return;
+        }
+
+        await play();
+
+        if (playing.value || !blocked.value) {
+            return;
+        }
+
+        mutedAutoplay.value = true;
+        setMuted(true);
+        await play();
+
+        if (!playing.value) {
+            // Even muted playback was refused: hand the player to the visitor.
+            mutedAutoplay.value = false;
+            setMuted(false);
+        }
+
+        playOnFirstGesture();
+    }
+
+    /** The visitor asked for sound (the hint pill or the play button). */
+    function unmuteNow() {
+        mutedAutoplay.value = false;
+        setMuted(false);
+
+        if (!playing.value) {
+            play();
         }
     }
 
@@ -235,6 +315,12 @@ export function useAudioPlayer() {
 
             stop();
 
+            // The muted autoplay stream gets its sound back on any interaction.
+            if (mutedAutoplay.value) {
+                mutedAutoplay.value = false;
+                setMuted(false);
+            }
+
             if (!playing.value) {
                 play();
             }
@@ -279,5 +365,9 @@ export function useAudioPlayer() {
         setLoop,
         toggleLoop,
         playOnFirstGesture,
+        attemptAutoplay,
+        unmuteNow,
+        setMuted,
+        mutedAutoplay,
     };
 }
