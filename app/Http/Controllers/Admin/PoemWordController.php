@@ -53,9 +53,17 @@ class PoemWordController extends Controller
     public function update(SaveTimingsRequest $request, Poem $poem): RedirectResponse
     {
         $payload = [];
+        $removed = 0;
 
         foreach ($request->validated()['words'] as $row) {
-            if (! empty($row['delete'])) {
+            $word = trim((string) ($row['word'] ?? ''));
+
+            // A ticked "delete" box — or simply an emptied word — drops the
+            // row. That is exactly what fixing an AI alignment needs: a word
+            // that is not in the recording, or two tokens merged into one.
+            if (! empty($row['delete']) || $word === '') {
+                $removed++;
+
                 continue;
             }
 
@@ -63,7 +71,7 @@ class PoemWordController extends Controller
             $end = round((float) ($row['end_time'] ?? 0), 2);
 
             $payload[] = [
-                'word' => trim((string) $row['word']),
+                'word' => $word,
                 'start' => $start,
                 'end' => max($start, $end),
             ];
@@ -71,6 +79,12 @@ class PoemWordController extends Controller
 
         $count = $this->wordSynchronizer->persist($poem, $payload);
 
-        return back()->with('status', "Ժամանակացույցը պահպանվեց․ {$count} բառ։");
+        $status = "Ժամանակացույցը պահպանվեց․ {$count} բառ։";
+
+        if ($removed > 0) {
+            $status .= " Հեռացվեց {$removed} բառ։";
+        }
+
+        return back()->with('status', $status);
     }
 }

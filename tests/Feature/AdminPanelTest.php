@@ -130,6 +130,42 @@ class AdminPanelTest extends TestCase
         $this->assertDatabaseMissing('poem_words', ['poem_id' => $poem->id, 'word' => 'Մէկ']);
     }
 
+    public function test_a_word_can_be_removed_by_clearing_its_text(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+        $poem->words()->create(['word' => 'Մեկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+        $poem->words()->create(['word' => 'երկու', 'start_time' => 1, 'end_time' => 2, 'word_order' => 1]);
+
+        // Emptying a word means "drop it": this used to answer with
+        // "The բառ field is required" instead of deleting anything.
+        $this->actingAs($admin)->post(route('admin.poems.timings.update', $poem), [
+            'words' => [
+                ['word' => '', 'start_time' => '0', 'end_time' => '1', 'word_order' => 0],
+                ['word' => 'երկու', 'start_time' => '1', 'end_time' => '2', 'word_order' => 1],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(['երկու'], $poem->words()->orderBy('word_order')->pluck('word')->all());
+    }
+
+    public function test_a_word_can_be_removed_with_the_delete_box(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $poem = Poem::factory()->create(['content' => 'Մեկ երկու']);
+        $poem->words()->create(['word' => 'Մեկ', 'start_time' => 0, 'end_time' => 1, 'word_order' => 0]);
+        $poem->words()->create(['word' => 'երկու', 'start_time' => 1, 'end_time' => 2, 'word_order' => 1]);
+
+        $this->actingAs($admin)->post(route('admin.poems.timings.update', $poem), [
+            'words' => [
+                ['word' => 'Մեկ', 'start_time' => '0', 'end_time' => '1', 'word_order' => 0, 'delete' => '1'],
+                ['word' => 'երկու', 'start_time' => '1', 'end_time' => '2', 'word_order' => 1],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(['երկու'], $poem->words()->orderBy('word_order')->pluck('word')->all());
+    }
+
     public function test_a_word_list_that_matches_the_text_is_reported_as_clean(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

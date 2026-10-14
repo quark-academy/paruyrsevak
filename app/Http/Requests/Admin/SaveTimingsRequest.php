@@ -19,7 +19,11 @@ class SaveTimingsRequest extends FormRequest
         return [
             'words' => ['required', 'array'],
             'words.*.id' => ['nullable', 'integer'],
-            'words.*.word' => ['required', 'string', 'max:255'],
+            // Empty is allowed on purpose: clearing the text (or ticking
+            // "delete") is how a word is dropped. Requiring it here made
+            // deletions impossible — the form answered "The բառ field is
+            // required" while the admin was trying to remove a word.
+            'words.*.word' => ['nullable', 'string', 'max:255'],
             'words.*.start_time' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'words.*.end_time' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'words.*.word_order' => ['nullable', 'integer', 'min:0'],

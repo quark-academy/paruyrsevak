@@ -113,7 +113,8 @@
 
                 <p class="mt-2 text-[11px] leading-relaxed text-stone-400">
                     Դեղին բառերը չեն համընկնում բանաստեղծության տեքստին․ սեղմիր «↺ դարձնել …»-ը կամ ուղղիր ձեռքով։
-                    «Enter»-ը տանում է հաջորդ բառին, «▶»-ը լսում է այդ բառից։
+                    Ավելորդ բառը հեռացնելու համար՝ դատարկիր դաշտը կամ նշիր «Ջնջել»-ը ու սեղմիր «Պահպանել»։
+                    «⇥ միավորել հաջորդի հետ»-ը միացնում է ԱԻ-ի բաժանած բառը, «Enter»-ը տանում է հաջորդ բառին, «▶»-ը լսում է այդ բառից։
                 </p>
 
                 @if (filled($poem->content))
@@ -164,6 +165,12 @@
                                             ↺ դարձնել «{{ $token }}»
                                         </button>
                                     @endif
+
+                                    <button type="button" data-merge-next
+                                            title="ԱԻ-ն երբեմն մեկ բառը բաժանում է երկուսի՝ այս կոճակը միացնում է հաջորդ բառի հետ"
+                                            class="mt-1 block text-[11px] font-medium text-stone-400 hover:text-stone-700 hover:underline">
+                                        ⇥ միավորել հաջորդի հետ
+                                    </button>
                                 </td>
                                 <td class="px-3 py-1.5">
                                     <input type="number" step="0.01" min="0" name="words[{{ $index }}][start_time]"
@@ -391,6 +398,76 @@
                     const show = needle === '' || (input?.value.toLowerCase().includes(needle) ?? false);
 
                     row.classList.toggle('hidden', !show);
+                });
+            });
+
+            // Deleting: a ticked "delete" box dims the row, and emptying the
+            // text ticks it automatically — the quickest way to drop a word
+            // that is not in the recording.
+            const rowOf = (input) => input.closest('tr[data-word-row]');
+            const deleteBox = (row) => row?.querySelector('input[name$="[delete]"]');
+
+            const paintDeleted = (row) => {
+                if (!row) return;
+
+                const dropped = Boolean(deleteBox(row)?.checked);
+                row.classList.toggle('opacity-40', dropped);
+                row.classList.toggle('line-through', dropped);
+            };
+
+            document.querySelectorAll('input[name$="[delete]"]').forEach((box) => {
+                const row = box.closest('tr[data-word-row]');
+
+                paintDeleted(row);
+                box.addEventListener('change', () => paintDeleted(row));
+            });
+
+            inputs.forEach((input) => {
+                input.addEventListener('input', () => {
+                    const row = rowOf(input);
+                    const box = deleteBox(row);
+
+                    if (!box) return;
+
+                    if (input.value.trim() === '') {
+                        box.checked = true;
+                        box.dataset.auto = '1';
+                    } else if (box.dataset.auto === '1') {
+                        box.checked = false;
+                        delete box.dataset.auto;
+                    }
+
+                    paintDeleted(row);
+                });
+            });
+
+            // The AI sometimes splits one word into two («Ինչ» + «էր»): this
+            // merges the pair, keeps the timing span and drops the second row.
+            document.querySelectorAll('[data-merge-next]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const row = button.closest('tr[data-word-row]');
+                    const next = row?.nextElementSibling;
+                    const input = row?.querySelector('[data-word-input]');
+                    const nextInput = next?.querySelector('[data-word-input]');
+
+                    if (!row || !next || !input || !nextInput) return;
+
+                    input.value = (input.value.trim() + ' ' + nextInput.value.trim()).trim();
+
+                    const end = next.querySelector('input[name$="[end_time]"]');
+                    const rowEnd = row.querySelector('input[name$="[end_time]"]');
+
+                    if (end && rowEnd) rowEnd.value = end.value;
+
+                    const box = deleteBox(next);
+
+                    if (box) {
+                        box.checked = true;
+                        delete box.dataset.auto;
+                    }
+
+                    paintDeleted(next);
+                    input.focus();
                 });
             });
         })();
