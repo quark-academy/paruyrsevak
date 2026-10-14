@@ -78,11 +78,18 @@ export function initCatalogue() {
         const url = new URL(href, window.location.href);
         url.searchParams.set('fragment', '1');
 
+        // Ask on the path of this very page, never on a path that needs a
+        // redirect: the host answers the bare base path without its trailing
+        // slash with a redirect built from its own (http) view of the scheme,
+        // and the browser refuses that http URL as mixed content. The page the
+        // visitor is on is by definition reachable.
+        const request = window.location.pathname + url.search;
+
         more.dataset.loading = '1';
         more.classList.add('opacity-60');
 
         try {
-            const response = await fetch(url.pathname + url.search, {
+            const response = await fetch(request, {
                 headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
             });
 

@@ -29,10 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Must run before anything reads the request path (see the middleware).
         $middleware->prepend(NormalizeBasePath::class);
 
-        // A visitor behind the proxy is on https even when the origin is not:
-        // every generated URL has to say so, or the browser blocks the fetch
-        // calls that the player, the search and the catalogue button make.
-        $middleware->append(ForceHttpsUrls::class);
+        // Then the *first* one in the stack: prepend() puts every new entry in
+        // front of the previous ones, so this runs before the base path is
+        // fixed — and before anything can build a URL or a redirect. Everything
+        // below must speak the scheme the visitor actually uses: a redirect
+        // handed out as http:// from an https:// page is blocked by the browser
+        // (mixed content, then CORS).
+        $middleware->prepend(ForceHttpsUrls::class);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,

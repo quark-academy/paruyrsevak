@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\ForceHttpsUrls;
+use App\Http\Middleware\NormalizeBasePath;
 use App\Models\Poem;
 use App\Support\Seo;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -110,5 +113,16 @@ class SeoTest extends TestCase
 
         $this->assertStringContainsString('src="https://', (string) $response->getContent());
         $this->assertStringNotContainsString('src="http://', (string) $response->getContent());
+    }
+
+    public function test_the_scheme_is_fixed_before_anything_else_runs(): void
+    {
+        // Redirects and URLs are built later in the stack, so the protocol has
+        // to be settled first — otherwise a redirect can be handed out as
+        // http:// from an https:// page and the browser blocks it.
+        $global = app(Kernel::class)->getGlobalMiddleware();
+
+        $this->assertSame(ForceHttpsUrls::class, $global[0] ?? null);
+        $this->assertSame(NormalizeBasePath::class, $global[1] ?? null);
     }
 }

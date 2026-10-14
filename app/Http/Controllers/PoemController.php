@@ -51,11 +51,14 @@ class PoemController extends Controller
 
         $isFiltered = $term !== '' || $source !== '';
 
-        // More of the catalogue, in the same query shape. Built from the home
-        // route so the URL needs no redirect: the bare "/sevak?page=2" form
-        // would cost an extra round trip before the slice arrives.
+        // More of the catalogue: this very URL with the query of the next slice.
+        // The trailing slash is kept on purpose — a request to the bare base
+        // path is answered by the host with a redirect, and a host that builds
+        // that redirect from its own view of the scheme hands back an http URL,
+        // which the browser then refuses as mixed content.
+        $nextQuery = array_merge($request->query(), ['page' => $poems->currentPage() + 1]);
         $moreUrl = $poems->hasMorePages()
-            ? route('home', array_merge($request->query(), ['page' => $poems->currentPage() + 1]))
+            ? rtrim(url()->current(), '/').'/?'.http_build_query($nextQuery)
             : null;
 
         // The button asks this very URL, marked as a fragment: only the cards
