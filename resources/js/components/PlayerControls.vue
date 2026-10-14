@@ -94,13 +94,18 @@ function cycleRate() {
                 <!-- 10 seconds back (the narrowest phones drop this pair) -->
                 <button
                     type="button"
-                    class="hidden h-11 w-11 place-items-center rounded-full text-xl text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
+                    class="hidden h-11 w-11 place-items-center rounded-full text-white/75 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
                     :disabled="disabled || duration <= 0"
                     title="10 վրկ հետ"
                     aria-label="10 վրկ հետ"
                     @click="emit('seek', Math.max(0, ratio - 10 / (duration || 1)))"
                 >
-                    ⟲
+                    <!-- Same 20×20 box and stroke as the prev/next icons. -->
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="1 4 1 10 7 10" />
+                        <path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10" />
+                    </svg>
                 </button>
 
                 <button
@@ -118,13 +123,18 @@ function cycleRate() {
                 <!-- 10 seconds forward -->
                 <button
                     type="button"
-                    class="hidden h-11 w-11 place-items-center rounded-full text-xl text-white/65 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
+                    class="hidden h-11 w-11 place-items-center rounded-full text-white/75 transition hover:bg-white/10 hover:text-white disabled:opacity-30 min-[360px]:grid"
                     :disabled="disabled || duration <= 0"
                     title="10 վրկ առաջ"
                     aria-label="10 վրկ առաջ"
                     @click="emit('seek', Math.min(1, ratio + 10 / (duration || 1)))"
                 >
-                    ⟳
+                    <!-- Same 20×20 box and stroke as the prev/next icons. -->
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10" />
+                    </svg>
                 </button>
 
                 <!-- next poem -->
