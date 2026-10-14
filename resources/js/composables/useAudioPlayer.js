@@ -62,11 +62,19 @@ export function useAudioPlayer() {
             loading.value = false;
             retryWhenPlayable();
         });
-        // The element's own state is the source of truth: a "pause" event can
-        // arrive late, after the next src has already started.
-        el.addEventListener('play', () => { playing.value = !el.paused; });
+        // The element's own state decides, and only when it agrees: a late
+        // "pause" event can arrive after the next src already started playing.
+        el.addEventListener('play', () => {
+            if (!el.paused) {
+                playing.value = true;
+            }
+        });
         el.addEventListener('playing', () => { loading.value = false; });
-        el.addEventListener('pause', () => { playing.value = el.paused; });
+        el.addEventListener('pause', () => {
+            if (el.paused) {
+                playing.value = false;
+            }
+        });
         el.addEventListener('waiting', () => { loading.value = true; });
         el.addEventListener('seeking', () => { seeking.value = true; });
         el.addEventListener('seeked', () => { seeking.value = false; });
