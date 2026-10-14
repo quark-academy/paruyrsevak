@@ -57,10 +57,8 @@ const {
     setRate,
     toggleMute,
     setLoop,
-    playOnFirstGesture,
     attemptAutoplay,
-    unmuteNow,
-    mutedAutoplay,
+    playedOnce,
 } = useAudioPlayer();
 
 /**
@@ -86,10 +84,10 @@ function finishIntro() {
     showIntro.value = false;
     markIntroSeen();
 
-    // The tap that closes the walkthrough is a user gesture: start playing
-    // (or give the muted autoplay stream its sound).
+    // The press on «Սկսենք» is a real user gesture, and that is all a browser
+    // asks for: the recording may start with sound right away.
     if (state.value === 'ready') {
-        unmuteNow();
+        attemptAutoplay();
     }
 }
 
@@ -107,21 +105,18 @@ const navHint = computed(() => (shuffle.value
     ? 'Սահեցրու՝ պատահական բանաստեղծություն'
     : 'Սահեցրու վերև/ներքև՝ հաջորդ բանաստեղծությունը'));
 
-/** Autoplay was refused by the browser — offer a "tap to listen" button. */
+/** Autoplay was refused by the browser — the play button pulses until pressed. */
 const autoplayBlocked = computed(
     () => blocked.value && autoplay.value && state.value === 'ready' && !playing.value,
 );
 
 /**
- * A refused autoplay is retried on the visitor's first interaction (a touch, a
- * scroll or a key press), so the recording starts by itself the moment they
- * reach for the screen — which is what "autoplay" should feel like on a phone.
+ * Nothing has started in this document yet and the browser waits for a
+ * deliberate gesture: show the "press ▶" hint. That single press is enough —
+ * every following poem starts by itself again, because the document keeps the
+ * activation it was given.
  */
-watch(autoplayBlocked, (isBlocked) => {
-    if (isBlocked && autoplay.value) {
-        playOnFirstGesture();
-    }
-});
+const needsStart = computed(() => state.value === 'ready' && !playedOnce.value && !playing.value);
 
 const silhouetteState = computed(() => {
     if (state.value === 'ready') {
@@ -508,24 +503,12 @@ watch(audioUrl, () => {
 });
 
 /**
- * The play button. While a muted autoplay stream runs, tapping it means
- * "give me the sound" — pausing would only make the page feel broken.
+ * The play button: the visitor's own press always wins over autoplay, so a
+ * pause they asked for is never fought by the next autoplay attempt.
  */
 function onToggle() {
-    if (mutedAutoplay.value) {
-        unmuteNow();
-
-        return;
-    }
-
     userPaused.value = playing.value;
     toggle();
-}
-
-/** A manual mute/unmute by the visitor always wins over the autoplay fallback. */
-function onMute() {
-    mutedAutoplay.value = false;
-    toggleMute();
 }
 
 // The recording ended: repeat it (loop mode) or keep the stream going.
@@ -671,6 +654,11 @@ onBeforeUnmount(() => {
 
         <!-- controls -->
         <section class="relative z-10 px-5 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-1">
+            <!-- Browsers play sound only after a deliberate gesture: ask for one. -->
+            <p v-if="needsStart" class="mb-2 text-center text-[11px] text-amber-200/85">
+                Սեղմիր ▶՝ լսելու համար
+            </p>
+
             <PlayerControls
                 :playing="playing"
                 :current-time="time"
@@ -682,7 +670,7 @@ onBeforeUnmount(() => {
                 @toggle="onToggle"
                 @seek="seekRatio"
                 @rate="setRate"
-                @mute="onMute"
+                @mute="toggleMute"
             />
 
             <!-- autoplay + playback mode: remembered between poems -->

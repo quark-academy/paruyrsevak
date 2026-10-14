@@ -59,6 +59,10 @@
                         <option value="0.75">0.75×</option>
                     </select>
                 </div>
+
+                <p id="start-hint" class="mt-3 hidden text-center text-[11px] text-amber-200/85">
+                    Սեղմիր ▶՝ լսելու համար
+                </p>
             </div>
         @else
             <div class="mb-5 rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-500">
@@ -91,7 +95,9 @@
             const total = document.getElementById('time-total');
             const words = Array.from(document.querySelectorAll('[data-word-index]'));
 
-            if (!audio || words.length === 0) return;
+            // The transport has to work even for a recording without word
+            // timings (archive tracks): only the karaoke highlight needs them.
+            if (!audio) return;
 
             const fmt = (t) => {
                 if (!isFinite(t)) return '0:00';
@@ -116,6 +122,8 @@
             };
 
             const highlight = (time) => {
+                if (words.length === 0) return;
+
                 let found = -1;
                 for (let i = 0; i < words.length; i++) {
                     const start = parseFloat(words[i].dataset.start || '0');
@@ -126,17 +134,14 @@
                 setActive(found);
             };
 
+            // ▶ is the one deliberate press a browser waits for; it plays with
+            // sound right away (no silent warm-up stream).
             toggle.addEventListener('click', () => {
-                const helper = window.sevakPoem;
-
-                // A muted autoplay stream is running: the tap asks for sound.
-                if (helper && (audio.paused || audio.muted)) {
-                    helper.wake();
-
-                    return;
+                if (audio.paused) {
+                    audio.play().catch(() => {});
+                } else {
+                    audio.pause();
                 }
-
-                audio.paused ? audio.play() : audio.pause();
             });
             audio.addEventListener('play', () => { toggle.textContent = '❚❚'; });
             audio.addEventListener('pause', () => { toggle.textContent = '▶'; });
@@ -151,7 +156,7 @@
             });
             words.forEach((el) => el.addEventListener('click', () => {
                 audio.currentTime = parseFloat(el.dataset.start || '0');
-                audio.play();
+                audio.play().catch(() => {});
             }));
         })();
         </script>
@@ -228,59 +233,45 @@
 
             if (!autoplay) return;
 
-            // What the first interaction does: sound on, playing.
-            window.sevakPoem = {
-                wake() {
-                    audio.muted = false;
+            // The player never fakes playback. One deliberate press on ▶ is all
+            // a browser asks for before it plays sound — and from that press on
+            // every following poem starts by itself again. Until the press
+            // happens the player says so, instead of running a muted stream that
+            // would swallow the beginning of the poem unheard.
+            const hint = document.getElementById('start-hint');
+            const toggle = document.getElementById('play-toggle');
 
-                    if (audio.paused) {
-                        audio.play().catch(() => {});
-                    }
-                },
+            const askForPress = () => {
+                if (hint) hint.classList.remove('hidden');
+                if (toggle) toggle.classList.add('animate-pulse');
             };
 
-            const armGesture = () => {
-                const events = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
-
-                const resume = (event) => {
-                    const target = event.target;
-                    const onControl = target instanceof Element
-                        && Boolean(target.closest('button, a, input, select, textarea, [role="button"]'));
-
-                    // Space is the player's own play/pause shortcut, and every
-                    // control looks after its own taps.
-                    if (onControl || event.code === 'Space') {
-                        return;
-                    }
-
-                    stopResume();
-                    window.sevakPoem.wake();
-                };
-
-                const stopResume = () => events.forEach(
-                    (name) => window.removeEventListener(name, resume, true),
-                );
-
-                events.forEach(
-                    (name) => window.addEventListener(name, resume, { capture: true, passive: true }),
-                );
+            const started = () => {
+                if (hint) hint.classList.add('hidden');
+                if (toggle) toggle.classList.remove('animate-pulse');
             };
 
-            // Audible autoplay first (allowed once the visitor interacted with
-            // the document), then a muted stream — that IS allowed — whose
-            // sound comes back at the first interaction. That is as close to
-            // autoplay as phones get.
-            audio.play().catch(async () => {
-                audio.muted = true;
+            let retryWhenReady = false;
 
-                try {
-                    await audio.play();
-                } catch (error) {
-                    // Even muted playback was refused: leave it to the visitor.
-                    audio.muted = false;
+            audio.addEventListener('play', started);
+
+            // Buffering (not a policy decision) interrupts play(): try again
+            // once the media can actually play.
+            audio.addEventListener('canplay', () => {
+                if (!retryWhenReady) return;
+
+                retryWhenReady = false;
+                audio.play().catch(askForPress);
+            });
+
+            audio.play().catch((error) => {
+                if (error && error.name === 'NotAllowedError') {
+                    askForPress();
+
+                    return;
                 }
 
-                armGesture();
+                retryWhenReady = true;
             });
         })();
         </script>

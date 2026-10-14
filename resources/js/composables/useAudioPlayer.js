@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
 
 /**
  * Tiny reactive wrapper around a single HTMLAudioElement.
@@ -21,13 +21,14 @@ export function useAudioPlayer() {
     const muted = ref(false);
     const loop = ref(false);
     const seeking = ref(false);
-    /** Set when the browser refuses audible autoplay (needs a user gesture). */
-    const blocked = ref(false);
     /**
-     * Set when audible autoplay was refused and the player fell back to a
-     * muted stream: it keeps playing silently until the visitor interacts.
+     * Set when the browser refused audible playback: the recording stays
+     * silent until the visitor presses ▶ (the player never runs a muted
+     * stream, which would swallow the beginning of the poem unheard).
      */
-    const mutedAutoplay = ref(false);
+    const blocked = ref(false);
+    /** True once a recording really started with sound in this document. */
+    const playedOnce = ref(false);
     /** Bumped every time the recording reaches its end (drives auto-advance). */
     const endedAt = ref(0);
 
@@ -131,11 +132,13 @@ export function useAudioPlayer() {
             .play()
             .then(() => {
                 blocked.value = false;
+                playedOnce.value = true;
                 resumeAfterAbort = false;
             })
             .catch((error) => {
                 // Browsers only allow audible playback after a user gesture:
-                // remember it so the player knows it must ask for a tap.
+                // remember it so the player knows it must ask for one press
+                // on ▶ (see attemptAutoplay).
                 playing.value = false;
                 blocked.value = error?.name === 'NotAllowedError';
 
@@ -214,11 +217,13 @@ export function useAudioPlayer() {
     /**
      * Start a freshly opened recording without the visitor pressing anything.
      *
-     * 1. Audible playback first — allowed as soon as the visitor interacted
-     *    with the document (a swipe or a tap on the previous poem).
-     * 2. If the browser refuses that, play muted: muted autoplay IS allowed.
-     *    The stream then runs silently and the first interaction turns the
-     *    sound on, which is the closest the web gets to autoplay on a phone.
+     * Audible playback is attempted once: the browser allows it on desktop and
+     * for anyone who already interacted with the document, so moving between
+     * poems keeps the stream going. When it is refused the player does NOT
+     * fall back to a muted stream — that would swallow the beginning of the
+     * poem while the visitor hears nothing. It waits for one explicit press on
+     * ▶ instead (the pulsing button and the hint ask for it); from that press
+     * on, every following poem starts by itself again.
      */
     async function attemptAutoplay() {
         if (playing.value) {
@@ -226,32 +231,6 @@ export function useAudioPlayer() {
         }
 
         await play();
-
-        if (playing.value || !blocked.value) {
-            return;
-        }
-
-        mutedAutoplay.value = true;
-        setMuted(true);
-        await play();
-
-        if (!playing.value) {
-            // Even muted playback was refused: hand the player to the visitor.
-            mutedAutoplay.value = false;
-            setMuted(false);
-        }
-
-        playOnFirstGesture();
-    }
-
-    /** The visitor asked for sound (the hint pill or the play button). */
-    function unmuteNow() {
-        mutedAutoplay.value = false;
-        setMuted(false);
-
-        if (!playing.value) {
-            play();
-        }
     }
 
     function setLoop(value) {
@@ -279,65 +258,6 @@ export function useAudioPlayer() {
         }
     });
 
-    /**
-     * Autoplay retry for browsers that refuse audible playback until the
-     * visitor interacts with the page.
-     *
-     * The recording then starts on the very first touch, scroll or key press —
-     * usually the moment the visitor reaches for the screen — so "autoplay"
-     * still feels automatic on phones. Taps that land on a control are ignored:
-     * those controls start playback themselves.
-     */
-    let disarmGestureResume = null;
-
-    function playOnFirstGesture() {
-        if (disarmGestureResume) {
-            return;
-        }
-
-        const events = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
-
-        function stop() {
-            disarmGestureResume = null;
-            events.forEach((name) => window.removeEventListener(name, start, true));
-        }
-
-        function start(event) {
-            const target = event.target;
-            const onControl = target instanceof Element
-                && Boolean(target.closest('button, a, input, select, textarea, [role="button"]'));
-
-            // Space is the player's own play/pause shortcut, and every control
-            // looks after its own taps.
-            if (onControl || event.code === 'Space') {
-                return;
-            }
-
-            stop();
-
-            // The muted autoplay stream gets its sound back on any interaction.
-            if (mutedAutoplay.value) {
-                mutedAutoplay.value = false;
-                setMuted(false);
-            }
-
-            if (!playing.value) {
-                play();
-            }
-        }
-
-        disarmGestureResume = stop;
-
-        events.forEach((name) => window.addEventListener(name, start, { capture: true, passive: true }));
-    }
-
-    // Once something really plays, a pending retry is pointless.
-    watch(playing, (isPlaying) => {
-        if (isPlaying) {
-            disarmGestureResume?.();
-        }
-    });
-
     return {
         audio,
         src,
@@ -351,6 +271,7 @@ export function useAudioPlayer() {
         muted,
         loop,
         blocked,
+        playedOnce,
         endedAt,
         progress,
         started,
@@ -364,10 +285,6 @@ export function useAudioPlayer() {
         toggleMute,
         setLoop,
         toggleLoop,
-        playOnFirstGesture,
         attemptAutoplay,
-        unmuteNow,
-        setMuted,
-        mutedAutoplay,
     };
 }
