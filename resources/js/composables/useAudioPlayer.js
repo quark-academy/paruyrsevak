@@ -62,9 +62,11 @@ export function useAudioPlayer() {
             loading.value = false;
             retryWhenPlayable();
         });
-        el.addEventListener('play', () => { playing.value = true; });
+        // The element's own state is the source of truth: a "pause" event can
+        // arrive late, after the next src has already started.
+        el.addEventListener('play', () => { playing.value = !el.paused; });
         el.addEventListener('playing', () => { loading.value = false; });
-        el.addEventListener('pause', () => { playing.value = false; });
+        el.addEventListener('pause', () => { playing.value = el.paused; });
         el.addEventListener('waiting', () => { loading.value = true; });
         el.addEventListener('seeking', () => { seeking.value = true; });
         el.addEventListener('seeked', () => { seeking.value = false; });
@@ -80,6 +82,7 @@ export function useAudioPlayer() {
         el.addEventListener('error', () => {
             error.value = 'Ձայնի բեռնումը ձախողվեց։';
             loading.value = false;
+            playing.value = false;
         });
 
         audio.value = el;
@@ -105,6 +108,15 @@ export function useAudioPlayer() {
     }
 
     function load(url) {
+        // Swapping src stops playback without firing "pause", so the flags are
+        // reset by hand: otherwise the button stays on ❚❚ and autoplay never
+        // runs again for the next poem (the visitor sees a dead player).
+        if (audio.value) {
+            audio.value.pause();
+        }
+
+        playing.value = false;
+
         src.value = url;
         ready.value = false;
         error.value = null;
@@ -150,10 +162,17 @@ export function useAudioPlayer() {
 
     function pause() {
         audio.value?.pause();
+        // The element can already be paused (a swapped src): the flag still has
+        // to follow, or ▶ and ❚❚ stop matching reality.
+        playing.value = false;
     }
 
     function toggle() {
-        if (playing.value) {
+        // Trust the element, not the flag: if the two ever disagree, a tap must
+        // start the recording instead of "pausing" silence.
+        const el = audio.value;
+
+        if (el ? !el.paused : playing.value) {
             pause();
         } else {
             play();

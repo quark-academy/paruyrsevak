@@ -41,6 +41,7 @@ const {
     playing,
     ready,
     loading,
+    error,
     time,
     duration,
     rate,
@@ -117,6 +118,35 @@ const autoplayBlocked = computed(
  * activation it was given.
  */
 const needsStart = computed(() => state.value === 'ready' && !playedOnce.value && !playing.value);
+
+/**
+ * A recording that fails to load must not leave "loading" on screen forever:
+ * the transport would stay disabled and the visitor could not even press ▶.
+ */
+watch(error, (value) => {
+    if (value && state.value === 'loading') {
+        state.value = 'error';
+        message.value = value;
+    }
+});
+
+/** Watchdog for a stalled request that never reports an error. */
+let loadWatchdog = null;
+
+watch(state, (value) => {
+    window.clearTimeout(loadWatchdog);
+
+    if (value !== 'loading') {
+        return;
+    }
+
+    loadWatchdog = window.setTimeout(() => {
+        if (state.value === 'loading' && !playing.value && duration.value === 0) {
+            state.value = 'error';
+            message.value = 'Ձայնը չբեռնվեց։ Փորձիր նորից։';
+        }
+    }, 12000);
+});
 
 const silhouetteState = computed(() => {
     if (state.value === 'ready') {
@@ -548,6 +578,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    window.clearTimeout(loadWatchdog);
     window.removeEventListener('keydown', onKeydown);
     window.removeEventListener('popstate', onPopState);
 });
@@ -633,7 +664,7 @@ onBeforeUnmount(() => {
                 :state-for="stateFor"
             />
 
-            <div v-else-if="showRawText" class="karaoke-mask max-h-[38dvh] overflow-y-auto px-6 py-4">
+            <div v-else-if="showRawText" class="karaoke-mask max-h-[38dvh] overflow-y-auto overscroll-contain px-6 py-4">
                 <p class="whitespace-pre-line text-center text-base leading-relaxed text-white/45">
                     {{ poem.content }}
                 </p>
@@ -653,7 +684,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- controls -->
-        <section class="relative z-10 px-5 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-1">
+        <section class="relative z-10 px-4 pb-[max(1.1rem,env(safe-area-inset-bottom))] pt-1 sm:px-5">
             <!-- Browsers play sound only after a deliberate gesture: ask for one. -->
             <p v-if="needsStart" class="mb-2 text-center text-[11px] text-amber-200/85">
                 Սեղմիր ▶՝ լսելու համար
@@ -667,10 +698,14 @@ onBeforeUnmount(() => {
                 :muted="muted"
                 :disabled="state !== 'ready'"
                 :attention="autoplayBlocked"
+                :has-prev="Boolean(poem.prev)"
+                :has-next="Boolean(poem.next) || shuffle"
                 @toggle="onToggle"
                 @seek="seekRatio"
                 @rate="setRate"
                 @mute="toggleMute"
+                @prev="go(poem.prev)"
+                @next="goNext"
             />
 
             <!-- autoplay + playback mode: remembered between poems -->

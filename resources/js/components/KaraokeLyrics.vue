@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 const props = defineProps({
     /** Array of lines, each line an array of { w, s, e } words. */
@@ -14,6 +14,45 @@ const props = defineProps({
 const emit = defineEmits(['seek']);
 
 const scroller = ref(null);
+
+/** How long a manual scroll holds the auto-follow back (ms). */
+const HOLD_MS = 4000;
+
+let holdTimer = null;
+
+/**
+ * True while the visitor reads the poem by hand: the karaoke keeps singing but
+ * stops pulling the text back to the active word, so the page can be scrolled
+ * up and down (and back). A new poem, or the timeout, hands the follow back.
+ */
+const held = ref(false);
+
+function holdFollow() {
+    held.value = true;
+    window.clearTimeout(holdTimer);
+    holdTimer = window.setTimeout(() => {
+        held.value = false;
+    }, HOLD_MS);
+}
+
+/** Centre a word in the list without moving anything around it. */
+function centre(index, behavior = 'smooth') {
+    const element = scroller.value;
+
+    if (!element || index < 0) {
+        return;
+    }
+
+    const node = element.querySelector(`[data-index="${index}"]`);
+
+    if (!node) {
+        return;
+    }
+
+    const target = node.offsetTop - element.clientHeight / 2 + node.clientHeight / 2;
+
+    element.scrollTo({ top: Math.max(0, target), behavior });
+}
 
 /** Flatten the lines once, assigning a stable global index to every word. */
 const indexedLines = computed(() => {
@@ -35,31 +74,40 @@ function wordClass(index) {
     }
 }
 
+// Follow the singing, unless the visitor took the text over for a moment.
 watch(
     () => props.activeIndex,
     (index) => {
-        if (!props.autoscroll || index < 0 || !scroller.value) {
+        if (!props.autoscroll || held.value) {
             return;
         }
 
-        const node = scroller.value.querySelector(`[data-index="${index}"]`);
-
-        if (!node) {
-            return;
-        }
-
-        const target = node.offsetTop - scroller.value.clientHeight / 2 + node.clientHeight / 2;
-
-        scroller.value.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        centre(index);
     },
 );
+
+// Another poem: its text starts at the beginning and the player follows again.
+watch(
+    () => props.lines,
+    () => {
+        held.value = false;
+        window.clearTimeout(holdTimer);
+
+        scroller.value?.scrollTo({ top: 0, behavior: 'instant' });
+    },
+);
+
+onBeforeUnmount(() => window.clearTimeout(holdTimer));
 </script>
 
 <template>
     <div
         v-if="indexedLines.length"
         ref="scroller"
-        class="karaoke-mask karaoke-scroller relative max-h-[42dvh] overflow-y-auto px-4 py-6 text-center"
+        class="karaoke-mask karaoke-scroller relative max-h-[42dvh] overflow-y-auto overscroll-contain px-4 py-6 text-center"
+        @touchstart.passive="holdFollow"
+        @touchmove.passive="holdFollow"
+        @wheel.passive="holdFollow"
     >
         <p
             v-for="(line, lineIndex) in indexedLines"
