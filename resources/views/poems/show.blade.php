@@ -84,7 +84,10 @@
         @endif
     </article>
 
-    @if ($poem->hasAudio() && $poem->words->isNotEmpty())
+    {{-- The transport (play / seek / clock) belongs to the recording itself and
+         has to work even when there are no word timings yet — only the karaoke
+         highlight needs them. --}}
+    @if ($poem->hasAudio())
         @push('scripts')
         <script>
         (function () {

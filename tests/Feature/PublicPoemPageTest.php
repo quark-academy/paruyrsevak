@@ -8,6 +8,7 @@ use App\Support\Seo;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -60,6 +61,46 @@ class PublicPoemPageTest extends TestCase
         $this->get('/?q='.urlencode('Ձմեռ'))
             ->assertOk()
             ->assertSee($other->title);
+    }
+
+    public function test_the_reading_page_asks_for_one_press_before_playing(): void
+    {
+        Storage::fake('audio');
+        Storage::disk('audio')->put('ai_audio/press-to-play.mp3', 'MP3-BYTES');
+
+        $poem = Poem::factory()->create([
+            'slug' => 'press-to-play',
+            'audio_path' => 'ai_audio/press-to-play.mp3',
+        ]);
+
+        $this->get(route('poems.show', $poem))
+            ->assertOk()
+            ->assertSee('id="start-hint"', false)
+            ->assertSee('Սեղմիր ▶՝ լսելու համար')
+            // The old hidden "tap anywhere" helper is gone for good: the page
+            // now asks for one deliberate press on the play button.
+            ->assertDontSee('sevakPoem', false);
+    }
+
+    public function test_a_recording_without_word_timings_still_gets_a_transport(): void
+    {
+        Storage::fake('audio');
+        Storage::disk('audio')->put('original_audio/no-timings.mp3', 'MP3-BYTES');
+
+        $poem = Poem::factory()->create([
+            'slug' => 'no-timings',
+            'audio_path' => 'original_audio/no-timings.mp3',
+            'content' => 'Երկու տող',
+        ]);
+
+        $this->get(route('poems.show', $poem))
+            ->assertOk()
+            ->assertSee('id="play-toggle"', false)
+            ->assertSee('id="seek"', false)
+            // The play button and the seek bar have their listeners even when
+            // the recording has no words yet (archive tracks).
+            ->assertSee("document.getElementById('play-toggle')", false)
+            ->assertDontSee('if (!audio || words.length === 0) return;', false);
     }
 
     public function test_the_hero_offers_a_play_shortcut_and_aggregate_numbers(): void
