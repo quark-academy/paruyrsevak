@@ -50,6 +50,6 @@ class PoemModelTest extends TestCase
 
         $this->assertFalse($poem->hasAudio());
         $this->assertNull($poem->audioUrl());
-        $this->assertSame('ԱԻ ձայն', $poem->voiceSourceLabel());
+        $this->assertSame('AI', $poem->voiceSourceLabel());
     }
 }

@@ -211,11 +211,12 @@ class Poem extends Model
     }
 
     /**
-     * Human readable source of the current voice track.
+     * Human readable source of the current voice track: the author's own
+     * recording, or the one generated for the archive.
      */
     public function voiceSourceLabel(): string
     {
-        return $this->is_original ? 'Արխիվային ձայն' : 'ԱԻ ձայն';
+        return $this->is_original ? 'Օրիգինալ' : 'AI';
     }
 
     /**

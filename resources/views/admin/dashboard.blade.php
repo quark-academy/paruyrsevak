@@ -19,8 +19,8 @@
             $cards = [
                 ['Բանաստեղծություններ', $poemsCount, 'bg-white'],
                 ['Բառեր (կարաոկե)', $wordsCount, 'bg-white'],
-                ['Արխիվային ձայն', $originalCount, 'bg-amber-50'],
-                ['ԱԻ ձայն', $aiCount, 'bg-sky-50'],
+                ['Օրիգինալ', $originalCount, 'bg-amber-50'],
+                ['AI', $aiCount, 'bg-sky-50'],
             ];
         @endphp
 

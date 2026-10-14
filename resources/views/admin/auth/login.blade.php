@@ -19,7 +19,8 @@
     @csrf
 
     <div class="mb-5 flex items-center gap-3">
-        <span class="grid h-10 w-10 place-items-center rounded-full bg-stone-100 text-sm font-bold text-stone-900">ՊՍ</span>
+        <img src="{{ asset('images/sevak-logo.png') }}" alt="Պարույր Սևակ"
+             class="h-10 w-10 rounded-full bg-stone-100 object-cover ring-1 ring-stone-200">
         <div class="text-sm leading-tight">
             <div class="font-semibold">Ադմին վահանակ</div>
             <div class="text-[11px] text-stone-400">Մուտք գործելու համար</div>

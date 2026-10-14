@@ -66,7 +66,7 @@
             </div>
         @else
             <div class="mb-5 rounded-xl border border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-sm text-stone-500">
-                Աուդիո դեռ ստեղծված չէ։ Այցելիր ադմին վահանակ՝ ստեղծելու ԱԻ ձայն։
+                Աուդիո դեռ ստեղծված չէ։ Այցելիր ադմին վահանակ՝ ստեղծելու AI ձայն։
             </div>
         @endif
 

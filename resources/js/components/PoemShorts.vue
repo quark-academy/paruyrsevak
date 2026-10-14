@@ -158,12 +158,12 @@ const silhouetteState = computed(() => {
 
 const silhouetteProgress = computed(() => (state.value === 'ready' ? progress.value : 0));
 
-const sourceLabel = computed(() => (isOriginal.value ? 'Արխիվային ձայն' : 'ԱԻ ձայն'));
+const sourceLabel = computed(() => (isOriginal.value ? 'Օրիգինալ' : 'AI'));
 
 const statusText = computed(() => {
     switch (state.value) {
         case 'generating':
-            return 'ԱԻ ձայնը ստեղծվում է…';
+            return 'AI ձայնը ստեղծվում է…';
         case 'loading':
             return 'Ձայնը բեռնվում է…';
         case 'ready':
@@ -607,11 +607,15 @@ onBeforeUnmount(() => {
         <header
             class="relative z-20 flex items-center justify-between gap-2 px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-1"
         >
+            <!-- the author's mark, straight from the server payload -->
             <a
                 :href="poem.homeUrl || '/'"
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-xs font-bold"
+                class="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-stone-100 ring-1 ring-white/15"
                 aria-label="Գլխավոր"
-            >ՊՍ</a>
+            >
+                <img v-if="poem.logoUrl" :src="poem.logoUrl" alt="" class="h-full w-full object-cover">
+                <span v-else class="grid h-full w-full place-items-center text-xs font-bold">ՊՍ</span>
+            </a>
 
             <div class="min-w-0 text-center">
                 <h1 class="truncate text-sm font-semibold">{{ poem.title }}</h1>
@@ -677,7 +681,7 @@ onBeforeUnmount(() => {
                         class="mt-2 rounded-full border border-amber-300/40 px-4 py-1.5 text-xs font-medium text-amber-200"
                         @click="reload"
                     >
-                        Ստեղծել ԱԻ ձայնը
+                        Ստեղծել AI ձայնը
                     </button>
                 </div>
             </div>

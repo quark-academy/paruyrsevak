@@ -12,6 +12,10 @@
     <meta name="twitter:card" content="summary">
     @stack('meta')
 
+    {{-- The author's monochrome mark is the site icon as well. --}}
+    <link rel="icon" type="image/png" href="{{ asset('images/sevak-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/sevak-logo.png') }}">
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=noto-sans-armenian:400,500,600,700" rel="stylesheet">
 
@@ -21,22 +25,22 @@
 </head>
 <body class="min-h-screen bg-stone-50 text-stone-900 antialiased"
       style="font-family: 'Noto Sans Armenian', ui-sans-serif, system-ui, sans-serif;">
-<header class="sticky top-0 z-30 border-b border-stone-200/70 bg-stone-50/85 backdrop-blur">
-    <div class="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2.5">
-        <a href="{{ route('home') }}" class="group flex items-center gap-2.5">
-            <span class="grid h-9 w-9 place-items-center rounded-full bg-stone-900 text-[13px] font-bold text-amber-200 ring-1 ring-amber-300/30 transition group-hover:ring-amber-300/60">ՊՍ</span>
-            <span class="text-base font-semibold leading-tight">
-                Պարույր Սևակ
+{{-- No menus: the author's mark and his name are the whole header, and on a
+     phone only Պ. Սևակ. The bar keeps a full width background. --}}
+<header class="sticky top-0 z-30 border-b border-stone-200/70 bg-stone-50/90 backdrop-blur">
+    <div class="mx-auto flex max-w-3xl items-center px-4 py-2.5">
+        <a href="{{ route('home') }}" class="group flex min-w-0 items-center gap-2.5" aria-label="Պարույր Սևակ">
+            <img src="{{ asset('images/sevak-logo.png') }}" alt=""
+                 class="h-9 w-9 shrink-0 rounded-full bg-stone-100 object-cover ring-1 ring-stone-200 transition group-hover:ring-amber-300">
+
+            {{-- Phones: the short form, nothing else. --}}
+            <span class="truncate text-base font-semibold sm:hidden">Պ. Սևակ</span>
+
+            <span class="hidden min-w-0 leading-tight sm:block">
+                <span class="block truncate text-base font-semibold">Պարույր Սևակ</span>
                 <span class="block text-[11px] font-normal text-stone-500">բանաստեղծությունների ձայնը</span>
             </span>
         </a>
-
-        <nav class="flex items-center gap-1">
-            <a href="{{ route('poems.index') }}"
-               class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-200/60 hover:text-stone-900">Բոլորը</a>
-            <a href="{{ route('admin.dashboard') }}"
-               class="rounded-full px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-200/60 hover:text-stone-900">Վահանակ</a>
-        </nav>
     </div>
 </header>
 

@@ -11,6 +11,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="{{ config('poems.player.background') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/sevak-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/sevak-logo.png') }}">
 
     {{-- Dynamic SEO from the database --}}
     <title>{{ $seoTitle }}</title>

@@ -20,45 +20,49 @@
         };
     @endphp
 
-    {{-- Hero: one clear action, everything else stays out of the way --}}
-    <section class="relative overflow-hidden rounded-3xl bg-[#0b0a09] px-5 py-6 text-stone-100 shadow-xl shadow-stone-900/10 sm:px-8 sm:py-8">
+    {{-- Hero: on a phone this is the full width background with the buttons and
+         the search; the texts are part of the desktop layout. --}}
+    <section class="relative -mx-4 -mt-6 overflow-hidden bg-[#0b0a09] px-5 py-5 text-stone-100 shadow-xl shadow-stone-900/10 sm:mx-0 sm:mt-0 sm:rounded-3xl sm:px-8 sm:py-8">
         <div class="pointer-events-none absolute inset-0"
              style="background: radial-gradient(120% 90% at 12% 0%, rgba(232,196,106,0.18) 0%, rgba(11,10,9,0) 62%);"></div>
-        <span class="pointer-events-none absolute -right-5 -top-8 select-none text-[10rem] font-black leading-none text-white/[0.035]">Ս</span>
+
+        {{-- The author's mark sits quietly in the corner, where the letter Ս used to be. --}}
+        <img src="{{ asset('images/sevak-logo.png') }}" alt="" aria-hidden="true"
+             class="pointer-events-none absolute -right-4 -top-6 h-40 w-40 select-none opacity-[0.06] sm:-right-6 sm:-top-10 sm:h-56 sm:w-56">
 
         <div class="relative">
-            <p class="text-[11px] font-medium uppercase tracking-[0.22em] text-amber-200/70">
+            <p class="hidden text-[11px] font-medium uppercase tracking-[0.22em] text-amber-200/70 sm:block">
                 Ձայնագրությունների արխիվ
             </p>
 
-            <h1 class="mt-2.5 text-3xl font-bold leading-tight sm:text-4xl">Պարույր Սևակ</h1>
+            <h1 class="mt-2.5 hidden text-3xl font-bold leading-tight sm:block sm:text-4xl">Պարույր Սևակ</h1>
 
-            <p class="mt-1.5 max-w-xl text-sm leading-relaxed text-stone-300">
+            <p class="mt-1.5 hidden max-w-xl text-sm leading-relaxed text-stone-300 sm:block">
                 Լսիր բանաստեղծությունները՝ բառացի կարաոկե համաժամեցմամբ։
             </p>
 
-            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div class="flex items-center gap-2 sm:mt-5">
                 @if ($listenPoem)
                     <a href="{{ \App\Support\Seo::poemUrl($listenPoem) }}" data-start-listening
-                       class="inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 transition active:scale-[0.98] sm:w-auto"
+                       class="inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-stone-900 shadow-lg shadow-amber-300/10 transition active:scale-[0.98] sm:flex-none sm:px-5"
                        style="background-color: #e8c46a;">
-                        ▶ Սկսել լսելը
+                        ▶ <span class="sm:hidden">Սկսել</span><span class="hidden sm:inline">Սկսել լսելը</span>
                     </a>
                 @endif
 
                 <button type="button" data-random-poem="{{ route('api.poems.random') }}"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-stone-200 transition hover:border-amber-300/40 hover:text-white sm:w-auto">
+                        class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-stone-200 transition hover:border-amber-300/40 hover:text-white sm:flex-none">
                     🎲 Պատահական
                 </button>
             </div>
 
-            <p class="mt-4 text-xs tabular-nums text-white/45">
+            <p class="mt-4 hidden text-xs tabular-nums text-white/45 sm:block">
                 {{ number_format((int) $stats['recordings'], 0, ',', ' ') }} ձայնագրություն
                 · {{ number_format((int) $stats['plays'], 0, ',', ' ') }} լսում
             </p>
 
             <form method="GET" action="{{ route('poems.index') }}"
-                  class="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-1.5 transition focus-within:border-amber-300/40">
+                  class="mt-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-1.5 transition focus-within:border-amber-300/40 sm:mt-4">
                 <span class="text-white/30">⌕</span>
                 <input type="search" name="q" value="{{ $term }}" placeholder="Փնտրել վերնագիր կամ տող…"
                        class="w-full bg-transparent py-2 text-sm text-stone-100 placeholder-white/35 focus:outline-none">
@@ -112,8 +116,8 @@
         {{-- One scrollable row on phones, a wrapped row on desktop --}}
         <div class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
             <a href="{{ $chipUrl(['source' => '']) }}" class="{{ $chip }} {{ $source === '' ? $chipActive : $chipIdle }}">Բոլորը</a>
-            <a href="{{ $chipUrl(['source' => 'original']) }}" class="{{ $chip }} {{ $source === 'original' ? $chipActive : $chipIdle }}">Արխիվային ձայն</a>
-            <a href="{{ $chipUrl(['source' => 'ai']) }}" class="{{ $chip }} {{ $source === 'ai' ? $chipActive : $chipIdle }}">ԱԻ ձայն</a>
+            <a href="{{ $chipUrl(['source' => 'original']) }}" class="{{ $chip }} {{ $source === 'original' ? $chipActive : $chipIdle }}">Օրիգինալ</a>
+            <a href="{{ $chipUrl(['source' => 'ai']) }}" class="{{ $chip }} {{ $source === 'ai' ? $chipActive : $chipIdle }}">AI</a>
             <a href="{{ $chipUrl(['sort' => 'new']) }}" class="{{ $chip }} {{ $sort === 'new' ? $chipActive : $chipIdle }}">Նորերը</a>
             <a href="{{ $chipUrl(['sort' => 'popular']) }}" class="{{ $chip }} {{ $sort === 'popular' ? $chipActive : $chipIdle }}">Ամենալսվածը</a>
         </div>

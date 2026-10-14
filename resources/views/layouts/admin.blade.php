@@ -6,6 +6,8 @@
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'Վահանակ') · {{ config('app.name') }}</title>
 
+    <link rel="icon" type="image/png" href="{{ asset('images/sevak-logo.png') }}">
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=noto-sans-armenian:400,500,600,700" rel="stylesheet">
 
@@ -19,7 +21,8 @@
 <header class="border-b border-stone-800 bg-stone-900 text-stone-100">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div class="flex items-center gap-3">
-            <span class="grid h-9 w-9 place-items-center rounded-full bg-stone-100 text-sm font-bold text-stone-900">ՊՍ</span>
+            <img src="{{ asset('images/sevak-logo.png') }}" alt="Պարույր Սևակ"
+                 class="h-9 w-9 rounded-full bg-stone-100 object-cover ring-1 ring-stone-700">
             <div class="text-sm leading-tight">
                 <div class="font-semibold">Ադմին վահանակ</div>
                 <div class="text-[11px] text-stone-400">{{ config('app.name') }}</div>

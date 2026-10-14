@@ -35,6 +35,9 @@ class PoemPlayerPayload
             'slug' => (string) $poem->slug,
             'title' => $poem->title,
             'author' => 'Պարույր Սևակ',
+            // The author's mark travels with the payload: the player draws it in
+            // its own top bar, and asset() keeps it correct behind a sub path.
+            'logoUrl' => asset('images/sevak-logo.png'),
             'content' => (string) $poem->content,
             'audioUrl' => $poem->hasAudio() ? $poem->audioUrl() : null,
             'isOriginal' => (bool) $poem->is_original,
