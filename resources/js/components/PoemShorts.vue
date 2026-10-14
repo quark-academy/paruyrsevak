@@ -616,7 +616,7 @@ onBeforeUnmount(() => {
             <!-- the author's mark, straight from the server payload -->
             <a
                 :href="poem.homeUrl || '/'"
-                class="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-stone-100 ring-1 ring-white/15"
+                class="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-stone-100"
                 aria-label="Գլխավոր"
             >
                 <img v-if="poem.logoUrl" :src="poem.logoUrl" alt="" class="h-full w-full object-cover">

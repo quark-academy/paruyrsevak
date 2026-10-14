@@ -62,17 +62,8 @@ const portraitOpacity = computed(() => {
         <!-- The author's own mark: his portrait fills with gold as the poem plays. -->
         <template v-if="logo">
             <span
-                class="pointer-events-none absolute inset-[-14%] rounded-full transition-opacity duration-700"
-                :style="{
-                    background: `radial-gradient(circle at 50% 45%, ${gold}3d 0%, ${gold}00 72%)`,
-                    opacity: playing ? 1 : 0.55,
-                }"
-            ></span>
-
-            <span
                 class="relative block h-full w-full overflow-hidden rounded-full"
                 :class="{ 'sevak-breathe': pulsing }"
-                :style="{ boxShadow: `inset 0 0 0 1px ${gold}59` }"
             >
                 <img
                     :src="logo"
