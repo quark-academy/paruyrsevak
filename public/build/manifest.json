@@ -4,7 +4,7 @@
     "name": "gestures"
   },
   "resources/css/app.css": {
-    "file": "assets/app-qEPeHOyp.css",
+    "file": "assets/app-BD_FGwBP.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -22,7 +22,7 @@
     ]
   },
   "resources/js/poem-shorts.js": {
-    "file": "assets/poem-shorts-CCWjY1li.js",
+    "file": "assets/poem-shorts-BYTiTZhn.js",
     "name": "poem-shorts",
     "src": "resources/js/poem-shorts.js",
     "isEntry": true,

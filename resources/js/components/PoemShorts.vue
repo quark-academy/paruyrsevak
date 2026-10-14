@@ -634,11 +634,12 @@ onBeforeUnmount(() => {
 
         <!-- portrait -->
         <div class="relative z-10 flex min-h-0 flex-1 items-center justify-center px-10">
-            <div class="aspect-[200/260] h-[26dvh] max-h-60">
+            <div class="aspect-square h-[24dvh] max-h-56">
                 <SevakSilhouette
                     :progress="silhouetteProgress"
                     :state="silhouetteState"
                     :gold="gold"
+                    :logo="poem.portraitUrl || poem.logoUrl"
                     class="h-full w-full"
                 />
             </div>

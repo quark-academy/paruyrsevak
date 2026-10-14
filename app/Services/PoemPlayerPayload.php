@@ -37,7 +37,12 @@ class PoemPlayerPayload
             'author' => 'Պարույր Սևակ',
             // The author's mark travels with the payload: the player draws it in
             // its own top bar, and asset() keeps it correct behind a sub path.
+            // The author's mark travels with the payload: the player draws it in
+            // its own top bar, and asset() keeps it correct behind a sub path.
             'logoUrl' => asset('images/sevak-logo.png'),
+            // The portrait is the player's icon now; the drawn silhouette stays
+            // as the fallback when the file is missing.
+            'portraitUrl' => asset('images/sevak-portrait.png'),
             'content' => (string) $poem->content,
             'audioUrl' => $poem->hasAudio() ? $poem->audioUrl() : null,
             'isOriginal' => (bool) $poem->is_original,
