@@ -126,4 +126,74 @@ class PoemPlayerApiTest extends TestCase
         $this->assertSame(2, $poem->words()->count());
         $this->assertCount(1, $response->json('lines'));
     }
+
+    /** Timing rows for a list of words, one after another. */
+    private function timings(array $words): array
+    {
+        return array_map(
+            static fn (string $word, int $index): array => [
+                'word' => $word,
+                'start_time' => $index * 0.5,
+                'end_time' => $index * 0.5 + 0.4,
+                'word_order' => $index,
+            ],
+            $words,
+            array_keys($words),
+        );
+    }
+
+    public function test_lines_follow_the_text_when_the_alignment_dropped_punctuation(): void
+    {
+        // A dash standing on its own is not a "word" for the alignment API, so
+        // the timings come back with one token less than the text has.
+        $poem = Poem::factory()->create([
+            'slug' => 'dash-poem',
+            'content' => "Մեկ երկու երեք —\nչորս հինգ",
+        ]);
+        $poem->words()->createMany($this->timings(['Մեկ', 'երկու', 'երեք', 'չորս', 'հինգ']));
+
+        $lines = $this->getJson('/api/poems/dash-poem')->assertOk()->json('lines');
+
+        $this->assertCount(2, $lines);
+        $this->assertSame(['Մեկ', 'երկու', 'երեք'], array_column($lines[0], 'w'));
+        $this->assertSame(['չորս', 'հինգ'], array_column($lines[1], 'w'));
+    }
+
+    public function test_lines_survive_a_word_that_the_aligner_merged(): void
+    {
+        $poem = Poem::factory()->create([
+            'slug' => 'merged-poem',
+            'content' => "Մեկ երկու երեք\nչորս հինգ վեց",
+        ]);
+
+        // Six words in the text, five in the recording: one was heard as one.
+        $poem->words()->createMany($this->timings(['Մեկ', 'երկու', 'երեքչորս', 'հինգ', 'վեց']));
+
+        $lines = $this->getJson('/api/poems/merged-poem')->assertOk()->json('lines');
+
+        // The lines of the text are kept instead of one endless block.
+        $this->assertCount(2, $lines);
+        $this->assertNotEmpty($lines[0]);
+        $this->assertNotEmpty($lines[1]);
+        $this->assertSame('Մեկ', $lines[0][0]['w']);
+        $this->assertSame('վեց', $lines[1][count($lines[1]) - 1]['w']);
+    }
+
+    public function test_a_transcript_without_line_breaks_follows_its_sentences(): void
+    {
+        // A text written from the recording arrives as one long paragraph.
+        $poem = Poem::factory()->create([
+            'slug' => 'transcript-poem',
+            'content' => 'Ա Բ Գ Դ Ե Զ։ Է Ը Թ Ժ Ի Լ',
+        ]);
+        $poem->words()->createMany(
+            $this->timings(['Ա', 'Բ', 'Գ', 'Դ', 'Ե', 'Զ։', 'Է', 'Ը', 'Թ', 'Ժ', 'Ի', 'Լ']),
+        );
+
+        $lines = $this->getJson('/api/poems/transcript-poem')->assertOk()->json('lines');
+
+        $this->assertCount(2, $lines);
+        $this->assertCount(6, $lines[0]);
+        $this->assertSame('Զ։', $lines[0][5]['w']);
+    }
 }
