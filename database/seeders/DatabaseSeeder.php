@@ -23,6 +23,14 @@ class DatabaseSeeder extends Seeder
             $this->call(PoemSeeder::class);
         }
 
+        // The real poems (text, SEO meta and the split word list): the only
+        // thing left is generating the voice with its timings. Safe to re-run,
+        // existing poems are never overwritten.
+        // Disable with SEED_SEVAK_POEMS=false in .env.
+        if (filter_var(env('SEED_SEVAK_POEMS', true), FILTER_VALIDATE_BOOL)) {
+            $this->call(SevakPoemsSeeder::class);
+        }
+
         // Archive recordings: runs only when the ./original_tracks folder with
         // the mp3 files is present (upload it to the server, then re-seed).
         // Disable with SEED_ORIGINAL_TRACKS=false in .env (or phpunit.xml).
