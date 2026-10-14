@@ -1,7 +1,7 @@
 {
-  "_same-origin-8Zr0Pf5U.js": {
-    "file": "assets/same-origin-8Zr0Pf5U.js",
-    "name": "same-origin"
+  "_gestures-sjSF2op4.js": {
+    "file": "assets/gestures-sjSF2op4.js",
+    "name": "gestures"
   },
   "resources/css/app.css": {
     "file": "assets/app-BF-LDrLr.css",
@@ -13,21 +13,21 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-Ckd5UgJP.js",
+    "file": "assets/app-BxwCS22o.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
-      "_same-origin-8Zr0Pf5U.js"
+      "_gestures-sjSF2op4.js"
     ]
   },
   "resources/js/poem-shorts.js": {
-    "file": "assets/poem-shorts-BsiahSRF.js",
+    "file": "assets/poem-shorts-Brmh7S_i.js",
     "name": "poem-shorts",
     "src": "resources/js/poem-shorts.js",
     "isEntry": true,
     "imports": [
-      "_same-origin-8Zr0Pf5U.js"
+      "_gestures-sjSF2op4.js"
     ]
   }
 }

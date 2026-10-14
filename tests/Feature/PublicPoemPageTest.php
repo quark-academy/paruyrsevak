@@ -125,6 +125,8 @@ class PublicPoemPageTest extends TestCase
 
         $fragment->assertHeader('X-Next-Page', '');
         $this->assertStringNotContainsString('<html', (string) $fragment->getContent());
+        // The marker the front-end checks before it trusts the answer.
+        $this->assertStringContainsString('data-card', (string) $fragment->getContent());
         $this->assertStringContainsString('Հին բանաստեղծություն', (string) $fragment->getContent());
 
         // The headers above stay with the test client: drop them, or the next
@@ -139,11 +141,12 @@ class PublicPoemPageTest extends TestCase
         $this->assertStringContainsString('Հին բանաստեղծություն', (string) $flagged->getContent());
 
         // Without either of them the page stays a full, styled document — the
-        // path a visitor without JavaScript takes.
+        // path a visitor without JavaScript takes. Page two is the last slice,
+        // so there is no "more" left to offer there.
         $plain = $this->get('/?page=2')->assertOk();
 
         $this->assertStringContainsString('<html', (string) $plain->getContent());
-        $this->assertStringContainsString('data-load-more', (string) $plain->getContent());
+        $this->assertStringNotContainsString('data-load-more', (string) $plain->getContent());
     }
 
     public function test_the_header_carries_the_search_icon_and_its_modal(): void

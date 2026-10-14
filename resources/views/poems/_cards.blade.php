@@ -1,7 +1,7 @@
 {{-- One card per poem. Rendered with the full list, and on its own when the
      visitor asks for more of the catalogue ("load more"). --}}
 @foreach ($poems as $poem)
-    <a href="{{ \App\Support\Seo::poemUrl($poem) }}"
+    <a href="{{ \App\Support\Seo::poemUrl($poem) }}" data-card
        class="group flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-3.5 py-3 shadow-sm transition hover:border-amber-200 hover:shadow-md hover:shadow-stone-900/5">
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-stone-200 text-[11px] text-stone-500 transition group-hover:border-transparent group-hover:bg-stone-900 group-hover:text-amber-200">
             ▶
