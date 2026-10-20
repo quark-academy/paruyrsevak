@@ -25,6 +25,13 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class PoemAudioStreamController extends Controller
 {
+    /**
+     * User agents of native media loaders that fetch <audio> outside the
+     * browser process. They are not the browser that rendered the page, so a
+     * signature bound to the page's User-Agent can never match there.
+     */
+    protected const MEDIA_STACK_AGENTS = ['AppleCoreMedia/', 'stagefright/', 'ExoPlayer'];
+
     public function __invoke(Request $request, Poem $poem): BinaryFileResponse
     {
         abort_unless($request->hasValidSignature(), 403, 'Ձայնի հղումը ժամկետանց է կամ սխալ է։');
@@ -48,7 +55,7 @@ class PoemAudioStreamController extends Controller
      */
     protected function guardVisitor(Request $request): void
     {
-        if (config('poems.audio.bind_user_agent', true)) {
+        if (config('poems.audio.bind_user_agent', true) && ! $this->isMediaStackRequest($request)) {
             $expected = (string) $request->query('u', '');
 
             abort_unless(
@@ -62,19 +69,48 @@ class PoemAudioStreamController extends Controller
             return;
         }
 
-        // Referer/Origin is missing when the URL is opened directly — the
-        // signature is the only guard then, which is fine (it still expires).
-        $origin = (string) ($request->headers->get('Origin') ?: $request->headers->get('Referer') ?: '');
+        // Media stacks often send "Origin: null" (or no Origin at all) while
+        // the Referer still names the page. Check every usable value instead
+        // of trusting just the first header: a literal "null" must not shadow
+        // a valid Referer and lock the recording.
+        $origins = array_filter([
+            trim((string) $request->headers->get('Origin')),
+            trim((string) $request->headers->get('Referer')),
+        ], static fn (string $origin): bool => $origin !== '' && strcasecmp($origin, 'null') !== 0);
 
-        if ($origin === '') {
-            return;
+        // No Origin/Referer at all: the signature is the only guard, which is
+        // fine — the link still has to be valid and expires.
+        foreach ($origins as $origin) {
+            abort_unless(
+                parse_url($origin, PHP_URL_HOST) === $request->getHost(),
+                403,
+                'Ձայնը հասանելի է միայն կայքի ներսից։',
+            );
+        }
+    }
+
+    /**
+     * Whether the request comes from the native media loader rather than from
+     * the browser itself.
+     *
+     * iOS Safari fetches <audio> in a separate process and identifies it as
+     * "AppleCoreMedia/…". The signed URL was built from the Safari User-Agent,
+     * so the hash comparison rejected every recording on iPhone (iOS 17+,
+     * including iPhone 17) before the file was even opened. Such requests
+     * still need a valid, unexpired signature and a same-origin referer when
+     * one is present.
+     */
+    protected function isMediaStackRequest(Request $request): bool
+    {
+        $agent = (string) $request->userAgent();
+
+        foreach (self::MEDIA_STACK_AGENTS as $needle) {
+            if (stripos($agent, $needle) !== false) {
+                return true;
+            }
         }
 
-        abort_unless(
-            parse_url($origin, PHP_URL_HOST) === $request->getHost(),
-            403,
-            'Ձայնը հասանելի է միայն կայքի ներսից։',
-        );
+        return false;
     }
 
     /**

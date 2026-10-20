@@ -85,6 +85,10 @@ return [
     'audio' => [
         'disk' => env('POEMS_AUDIO_DISK', 'audio'),
         'url_ttl' => (int) env('POEMS_AUDIO_URL_TTL', 21600),
+        // They are fetched by native media loaders (AppleCoreMedia,
+        // stagefright, ExoPlayer) that run outside the browser process and
+        // cannot carry the page's UA hash, so those requests skip this check
+        // in PoemAudioStreamController. The signed, expiring URL still applies.
         'bind_user_agent' => filter_var(env('POEMS_AUDIO_BIND_UA', true), FILTER_VALIDATE_BOOL),
         'check_origin' => filter_var(env('POEMS_AUDIO_CHECK_ORIGIN', true), FILTER_VALIDATE_BOOL),
     ],

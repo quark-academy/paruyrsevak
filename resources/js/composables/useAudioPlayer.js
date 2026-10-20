@@ -44,7 +44,10 @@ export function useAudioPlayer() {
 
         const el = new Audio();
         el.preload = 'metadata';
-        el.crossOrigin = 'anonymous';
+        // No crossOrigin here on purpose: the recording is a signed
+        // same-origin URL, nothing reads its samples (no Web Audio API or
+        // canvas), and CORS mode makes Safari reject the media when APP_URL
+        // and the page host differ (www / non-www, subdirectory installs).
         el.muted = muted.value;
         el.volume = muted.value ? 0 : 1;
         el.loop = loop.value;
