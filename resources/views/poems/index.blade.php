@@ -63,6 +63,26 @@
                 </a>
             @endif
         </div>
+
+        {{-- Themes: one quiet line of words under the numbers — the shortest
+             way to pick a mood. The chosen word turns gold; nothing else is
+             added to the page. On a phone the line scrolls sideways instead of
+             wrapping, so the hero stays the same height. --}}
+        <nav class="relative mt-4 flex flex-nowrap items-center gap-x-2 overflow-x-auto border-t border-white/10 pt-3 text-[13px] leading-none [scrollbar-width:none] sm:mt-5 sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+             aria-label="Ըստ թեմայի">
+            <span class="mr-0.5 shrink-0 text-[10px] uppercase tracking-[0.2em] text-white/30">Թեմա</span>
+
+            <a href="{{ $chipUrl(['theme' => '']) }}"
+               class="shrink-0 whitespace-nowrap rounded px-0.5 transition {{ $theme === '' ? 'font-semibold text-amber-200' : 'text-white/50 hover:text-white' }}"
+               @if ($theme === '') aria-current="page" @endif>Բոլորը</a>
+
+            @foreach ($themes as $themeKey => $themeLabel)
+                <span class="shrink-0 text-white/15" aria-hidden="true">·</span>
+                <a href="{{ $chipUrl(['theme' => $themeKey]) }}"
+                   class="shrink-0 whitespace-nowrap rounded px-0.5 transition {{ $theme === $themeKey ? 'font-semibold text-amber-200' : 'text-white/50 hover:text-white' }}"
+                   @if ($theme === $themeKey) aria-current="page" @endif>{{ $themeLabel }}</a>
+            @endforeach
+        </nav>
     </section>
 
     @if ($spotlight->isNotEmpty() && ! $isFiltered)
@@ -109,20 +129,6 @@
             <a href="{{ $chipUrl(['source' => 'ai']) }}" class="{{ $chip }} {{ $source === 'ai' ? $chipActive : $chipIdle }}">AI</a>
             <a href="{{ $chipUrl(['sort' => 'new']) }}" class="{{ $chip }} {{ $sort === 'new' ? $chipActive : $chipIdle }}">Նորերը</a>
             <a href="{{ $chipUrl(['sort' => 'popular']) }}" class="{{ $chip }} {{ $sort === 'popular' ? $chipActive : $chipIdle }}">Ամենալսվածը</a>
-        </div>
-
-        {{-- Themes: one more row of chips, so a mood can be chosen without
-             leaving the catalogue. --}}
-        <div class="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-            <span class="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-wide text-stone-400">Թեմա</span>
-            <a href="{{ $chipUrl(['theme' => '']) }}" class="{{ $chip }} {{ $theme === '' ? $chipActive : $chipIdle }}">Բոլորը</a>
-            @foreach ($themes as $themeKey => $themeLabel)
-                <a href="{{ $chipUrl(['theme' => $themeKey]) }}"
-                   class="{{ $chip }} {{ $theme === $themeKey ? $chipActive : $chipIdle }}"
-                   @if ($theme === $themeKey) aria-current="page" @endif>
-                    {{ $themeLabel }}
-                </a>
-            @endforeach
         </div>
 
         @if ($poems->isEmpty())
