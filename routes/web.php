@@ -6,6 +6,7 @@ use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PoemAudioStreamController;
 use App\Http\Controllers\PoemController;
+use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,10 @@ Route::get('/audio/{poem}', PoemAudioStreamController::class)
 Route::get('/__diagnostics', DiagnosticsController::class)->name('diagnostics');
 
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+
+// Generated as well: the sitemap URL must follow the actual domain (and the
+// subdirectory the site is served from), so a static file would be wrong.
+Route::get('/robots.txt', RobotsController::class)->name('robots');
 
 // Fallback for "public" disk files (/storage/...). Apache serves them directly
 // when public/storage symlink exists; otherwise Laravel streams the file.

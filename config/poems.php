@@ -111,4 +111,26 @@ return [
         'gold' => env('POEMS_GOLD', '#e8c46a'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Search engine metadata
+    |--------------------------------------------------------------------------
+    |
+    | Titles and descriptions are generated for every page (App\Support\Seo).
+    | A title carries the site's promise — "Կարդում է հեղինակը" — as long as it
+    | fits into "title_limit" characters; when it does not, the phrase moves to
+    | the description automatically. "same_as" adds the author's profiles to the
+    | structured data (comma separated list of URLs).
+    |
+    */
+
+    'seo' => [
+        'title_limit' => (int) env('POEMS_SEO_TITLE_LIMIT', 60),
+        'description_limit' => (int) env('POEMS_SEO_DESCRIPTION_LIMIT', 160),
+        'same_as' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('POEMS_SEO_SAME_AS', '')),
+        ))),
+    ],
+
 ];

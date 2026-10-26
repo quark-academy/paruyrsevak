@@ -16,6 +16,7 @@ class PoemShortController extends Controller
         return view('poems.short', [
             'poem' => $poem,
             'payload' => $payload->build($poem),
+            'seo' => \App\Support\Seo::poemPage($poem),
         ]);
     }
 }

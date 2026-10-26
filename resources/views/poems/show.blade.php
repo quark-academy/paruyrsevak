@@ -1,15 +1,5 @@
 @extends('layouts.app')
 
-@section('title', ($poem->meta_title ?: $poem->title).' · '.config('app.name'))
-@section('meta_description', $poem->meta_description ?: $poem->excerpt(150))
-@section('canonical', \App\Support\Seo::forPoem($poem))
-
-@push('meta')
-    <meta property="og:title" content="{{ $poem->meta_title ?: $poem->title }}">
-    <meta property="og:description" content="{{ $poem->meta_description ?: $poem->excerpt(150) }}">
-    <meta property="og:type" content="article">
-@endpush
-
 @section('content')
     <a href="{{ route('poems.index') }}" class="mb-4 inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-900">
         ← Բոլոր բանաստեղծությունները

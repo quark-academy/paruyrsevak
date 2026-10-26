@@ -1,13 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Իմ ընտրանին · '.config('app.name'))
-@section('meta_description', 'Ձեր ընտրած Պարույր Սևակի բանաստեղծությունները՝ պահված միայն այս դիտարկիչում։')
-@section('canonical', \App\Support\Seo::canonical('favorites'))
-
-@push('meta')
-    <meta name="robots" content="noindex, follow">
-@endpush
-
 @section('content')
     <div data-favorites-page>
         <header class="mb-5">

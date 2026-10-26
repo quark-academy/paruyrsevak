@@ -56,16 +56,30 @@
             </div>
 
             <div>
-                <label for="meta_title" class="mb-1 block text-xs font-medium text-stone-600">SEO վերնագիր</label>
+                <label for="meta_title" class="mb-1 block text-xs font-medium text-stone-600">SEO վերնագիր (կամընտիր)</label>
                 <input id="meta_title" name="meta_title" type="text" value="{{ old('meta_title', $p->meta_title) }}"
+                       placeholder="դատարկ թողեք՝ ավտոմատ գեներացնելու համար"
                        class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none">
+                <p class="mt-1 text-[11px] leading-relaxed text-stone-500">
+                    Դատարկ դեպքում վերնագիրը կառուցվում է ինքնաշխատ՝ «… — {{ \App\Support\Seo::READING_PHRASE }}»։
+                </p>
             </div>
 
             <div>
-                <label for="meta_description" class="mb-1 block text-xs font-medium text-stone-600">SEO նկարագրություն</label>
+                <label for="meta_description" class="mb-1 block text-xs font-medium text-stone-600">SEO նկարագրություն (կամընտիր)</label>
                 <textarea id="meta_description" name="meta_description" rows="3"
+                          placeholder="դատարկ թողեք՝ ավտոմատ գեներացնելու համար"
                           class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-stone-500 focus:outline-none">{{ old('meta_description', $p->meta_description) }}</textarea>
             </div>
+
+            @if ($p->exists)
+                @php($generated = \App\Support\Seo::poemPage($p))
+                <div class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                    <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">SEO-ն ինչպես կտեսնեն որոնողականները</p>
+                    <p class="mt-2 text-sm font-medium leading-snug text-sky-800">{{ $generated['title'] }}</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-stone-600">{{ $generated['description'] }}</p>
+                </div>
+            @endif
         </div>
 
         <div class="flex items-center justify-end gap-2">

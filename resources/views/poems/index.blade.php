@@ -1,9 +1,5 @@
 @extends('layouts.app')
 
-@section('title', $term !== '' ? "Որոնում՝ {$term}" : 'Պարույր Սևակ — բանաստեղծությունների ձայնը')
-@section('meta_description', \App\Support\Seo::defaultDescription())
-@section('canonical', \App\Support\Seo::canonical())
-
 @section('content')
     @php
         $chip = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition';

@@ -31,9 +31,16 @@ class PoemPlayerPayload
 
         $hasRouteKey = filled($poem->getRouteKey());
 
+        // The same generated metadata the server renders in <head>: the player
+        // swaps the document title and description in place, so a session that
+        // moves between poems keeps every page correctly described.
+        $seo = Seo::poemPage($poem);
+
         return [
             'slug' => (string) $poem->slug,
             'title' => $poem->title,
+            'seoTitle' => $seo['title'],
+            'seoDescription' => $seo['description'],
             'author' => 'Պարույր Սևակ',
             // The author's mark travels with the payload: the player draws it in
             // its own top bar, and asset() keeps it correct behind a sub path.
@@ -50,7 +57,7 @@ class PoemPlayerPayload
             'playsLabel' => $poem->playsLabel(),
             'themes' => $poem->themeKeys(),
             'themeLabels' => $poem->themeLabels(),
-            'canonical' => Seo::forPoem($poem),
+            'canonical' => $seo['canonical'],
             'lines' => $this->buildLines($poem, $words),
             'homeUrl' => route('home'),
             // A poem without a route key (empty slug) cannot be linked to:

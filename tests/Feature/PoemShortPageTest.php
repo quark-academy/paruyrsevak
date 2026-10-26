@@ -39,7 +39,8 @@ class PoemShortPageTest extends TestCase
 
         $response = $this->get('/seo-test')->assertOk();
 
-        $response->assertSee('<title>SEO վերնագիր</title>', false);
+        // The title is generated: the stored title plus the promise of the site.
+        $response->assertSee('<title>SEO վերնագիր — Կարդում է հեղինակը</title>', false);
         $response->assertSee('name="description" content="SEO նկարագրություն տող"', false);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Seo;
 use Illuminate\View\View;
 
 /**
@@ -12,6 +13,27 @@ class FavoritesController extends Controller
 {
     public function index(): View
     {
-        return view('favorites.index');
+        $canonical = Seo::canonical('favorites');
+
+        return view('favorites.index', [
+            'seo' => Seo::page([
+                'title' => 'Իմ ընտրանին',
+                'description' => 'Ձեր ընտրած Պարույր Սևակի բանաստեղծությունները՝ պահված միայն այս դիտարկիչում։',
+                'canonical' => $canonical,
+                // A personal list has nothing to offer a search result page.
+                'robots' => 'noindex, follow',
+                'keywords' => [Seo::POET, 'ընտրանին', 'բանաստեղծություններ'],
+                'schema' => [
+                    [
+                        '@type' => 'WebPage',
+                        '@id' => $canonical.'#page',
+                        'url' => $canonical,
+                        'name' => 'Իմ ընտրանին',
+                        'inLanguage' => Seo::LANGUAGE,
+                        'isPartOf' => ['@id' => Seo::base().'/#website'],
+                    ],
+                ],
+            ]),
+        ]);
     }
 }

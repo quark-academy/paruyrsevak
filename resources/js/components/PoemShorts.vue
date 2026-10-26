@@ -211,13 +211,29 @@ function applyPayload(data) {
     playTracked = false;
     userPaused.value = false;
 
-    if (typeof data.title === 'string' && data.title) {
+    // The generated SEO title (title + «Կարդում է հեղինակը», or the plain
+    // title when the phrase does not fit) — never the bare poem name.
+    if (typeof data.seoTitle === 'string' && data.seoTitle) {
+        document.title = data.seoTitle;
+    } else if (typeof data.title === 'string' && data.title) {
         document.title = data.title;
+    }
+
+    if (typeof data.seoDescription === 'string' && data.seoDescription) {
+        document.querySelector('meta[name="description"]')?.setAttribute('content', data.seoDescription);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', data.seoDescription);
+        document.querySelector('meta[name="twitter:description"]')?.setAttribute('content', data.seoDescription);
+    }
+
+    if (data.seoTitle) {
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', data.seoTitle);
+        document.querySelector('meta[name="twitter:title"]')?.setAttribute('content', data.seoTitle);
     }
 
     // Keep the address-bar/canonical pair in sync while swapping in place.
     if (typeof data.canonical === 'string' && data.canonical) {
         document.querySelector('link[rel="canonical"]')?.setAttribute('href', data.canonical);
+        document.querySelector('meta[property="og:url"]')?.setAttribute('content', data.canonical);
     }
 }
 

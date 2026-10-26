@@ -1,9 +1,5 @@
 @extends('layouts.app')
 
-@section('title', 'Օգտագործման պայմաններ և հավաքվող տվյալներ · '.config('app.name'))
-@section('meta_description', 'Կայքի օգտագործման պայմանները, հեղինակային իրավունքը և այն տվյալները, որոնք հավաքվում են կայքից օգտվելիս։')
-@section('canonical', \App\Support\Seo::canonical('terms'))
-
 @section('content')
     @php
         $heading = 'mt-8 text-base font-semibold text-stone-900';

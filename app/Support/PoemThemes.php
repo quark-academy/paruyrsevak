@@ -23,6 +23,19 @@ final class PoemThemes
     ];
 
     /**
+     * Page titles of the theme landing pages ("Սիրո բանաստեղծություններ").
+     *
+     * @var array<string, string>
+     */
+    public const SEO_TITLES = [
+        'love' => 'Սիրո բանաստեղծություններ',
+        'life' => 'Կյանքի բանաստեղծություններ',
+        'homeland' => 'Հայրենիքի բանաստեղծություններ',
+        'longing' => 'Կարոտի բանաստեղծություններ',
+        'philosophy' => 'Փիլիսոփայական բանաստեղծություններ',
+    ];
+
+    /**
      * Themes of the poems known at the time the feature was introduced.
      *
      * @var array<string, list<string>>
