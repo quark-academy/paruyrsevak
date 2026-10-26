@@ -20,6 +20,23 @@
         ▶ Կարաոկե ռեժիմ
     </a>
 
+    <button type="button"
+            data-favorite
+            data-slug="{{ $poem->slug }}"
+            data-title="{{ $poem->title }}"
+            data-url="{{ \App\Support\Seo::poemUrl($poem) }}"
+            data-excerpt="{{ $poem->excerpt(90) }}"
+            aria-pressed="false"
+            aria-label="Ավելացնել «{{ $poem->title }}» իմ ընտրանուն"
+            title="Իմ ընտրանին"
+            class="mb-4 ml-2 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-500 transition hover:border-rose-200 hover:text-rose-500 active:scale-95">
+        <svg data-favorite-icon class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+        </svg>
+        <span>Իմ ընտրանին</span>
+    </button>
+
     <article class="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <header class="mb-4">
             <div class="flex flex-wrap items-center gap-2">
@@ -32,6 +49,17 @@
                 <span id="plays-count" class="tabular-nums">▶ {{ $poem->playsLabel() }} լսում</span>
                 · {{ $poem->words->count() }} բառ · կարաոկե համաժամեցում
             </p>
+
+            @if ($poem->themeKeys() !== [])
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    @foreach ($poem->themeKeys() as $themeKey)
+                        <a href="{{ route('poems.index', ['theme' => $themeKey]) }}"
+                           class="rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-medium text-stone-600 transition hover:bg-stone-200 hover:text-stone-900">
+                            {{ \App\Support\PoemThemes::LABELS[$themeKey] }}
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </header>
 
         @if ($poem->hasAudio())

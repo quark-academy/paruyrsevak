@@ -48,6 +48,8 @@ class PoemPlayerPayload
             'isOriginal' => (bool) $poem->is_original,
             'plays' => (int) $poem->plays_count,
             'playsLabel' => $poem->playsLabel(),
+            'themes' => $poem->themeKeys(),
+            'themeLabels' => $poem->themeLabels(),
             'canonical' => Seo::forPoem($poem),
             'lines' => $this->buildLines($poem, $words),
             'homeUrl' => route('home'),

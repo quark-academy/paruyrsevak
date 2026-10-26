@@ -24,6 +24,7 @@ class PoemFactory extends Factory
             'title' => $title,
             'slug' => Str::slug($title).'-'.Str::lower(Str::random(6)),
             'content' => fake()->paragraph(),
+            'themes' => ['life', 'philosophy'],
             'audio_path' => null,
             'is_original' => false,
             'meta_title' => $title,

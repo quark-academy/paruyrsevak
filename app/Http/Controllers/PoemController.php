@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Poem;
 use App\Models\PoemWord;
+use App\Support\PoemThemes;
 use App\Support\Query;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,9 +27,11 @@ class PoemController extends Controller
         $term = Query::string($request, 'q');
         $source = Query::string($request, 'source');
         $sort = Query::string($request, 'sort', 'new');
+        $theme = Query::string($request, 'theme');
 
         $source = in_array($source, ['original', 'ai'], true) ? $source : '';
         $sort = in_array($sort, ['new', 'popular'], true) ? $sort : 'new';
+        $theme = array_key_exists($theme, PoemThemes::LABELS) ? $theme : '';
 
         $filtered = Poem::query()
             ->when($term !== '', function ($query) use ($term): void {
@@ -37,7 +40,8 @@ class PoemController extends Controller
                         ->orWhere('content', 'like', "%{$term}%");
                 });
             })
-            ->when($source !== '', fn ($query) => $query->where('is_original', $source === 'original'));
+            ->when($source !== '', fn ($query) => $query->where('is_original', $source === 'original'))
+            ->when($theme !== '', fn ($query) => $query->withTheme($theme));
 
         $poems = (clone $filtered)
             ->withCount('words')
@@ -49,7 +53,7 @@ class PoemController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $isFiltered = $term !== '' || $source !== '';
+        $isFiltered = $term !== '' || $source !== '' || $theme !== '';
 
         // More of the catalogue: this very URL with the query of the next slice.
         // The trailing slash is kept on purpose — a request to the bare base
@@ -77,6 +81,8 @@ class PoemController extends Controller
             'term' => $term,
             'source' => $source,
             'sort' => $sort,
+            'theme' => $theme,
+            'themes' => PoemThemes::LABELS,
             'isFiltered' => $isFiltered,
             'stats' => $this->stats(),
             // Featured poems for the hero: only meaningful once listens exist.

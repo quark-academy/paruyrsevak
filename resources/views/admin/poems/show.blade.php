@@ -14,6 +14,9 @@
                 </span>
                 <span>{{ $poem->words->count() }} բառ</span>
                 <span class="tabular-nums">▶ {{ $poem->playsLabel() }} լսում</span>
+                @foreach ($poem->themeLabels() as $themeLabel)
+                    <span class="rounded-full bg-stone-100 px-2 py-0.5">{{ $themeLabel }}</span>
+                @endforeach
             </p>
         </div>
         <div class="flex flex-wrap gap-2 text-sm">

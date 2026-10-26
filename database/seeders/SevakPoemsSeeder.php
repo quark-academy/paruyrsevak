@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Poem;
 use App\Services\PoemWordSynchronizer;
+use App\Support\PoemThemes;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,11 +30,18 @@ class SevakPoemsSeeder extends Seeder
                 ['title' => $data['title']],
                 [
                     'content' => $data['content'],
+                    'themes' => PoemThemes::forTitle($data['title']),
                     'is_original' => false,
                     'meta_title' => $data['meta_title'],
                     'meta_description' => $data['meta_description'],
                 ],
             );
+
+            // Theme tags appeared later than the first poems: fill them on an
+            // existing row without touching its text or its word timings.
+            if (blank($poem->themes)) {
+                $poem->update(['themes' => PoemThemes::forTitle($poem->title)]);
+            }
 
             if ($poem->words()->count() === 0) {
                 $synchronizer->syncFromContent($poem);

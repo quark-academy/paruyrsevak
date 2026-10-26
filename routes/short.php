@@ -15,6 +15,6 @@ use Illuminate\Support\Facades\Route;
 
 if (config('poems.short_urls')) {
     Route::get('/{poem}', PoemShortController::class)
-        ->where('poem', '(?!admin$|up$|api$|storage$|build$|poems$|audio$|sitemap\.xml$|favicon\.ico$|robots\.txt$)[A-Za-z0-9\-]+')
+        ->where('poem', '(?!admin$|up$|api$|storage$|build$|poems$|favorites$|terms$|audio$|sitemap\.xml$|favicon\.ico$|robots\.txt$)[A-Za-z0-9\-]+')
         ->name('poems.short');
 }

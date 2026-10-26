@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\PoemThemes;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,8 @@ class PoemRequest extends FormRequest
                 Rule::unique('poems', 'slug')->ignore($poem?->getKey()),
             ],
             'content' => ['required', 'string'],
+            'themes' => ['nullable', 'array'],
+            'themes.*' => ['string', Rule::in(array_keys(PoemThemes::LABELS))],
             'is_original' => ['sometimes', 'boolean'],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:500'],
@@ -37,7 +40,11 @@ class PoemRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $themes = $this->input('themes');
+        $themes = is_array($themes) ? $themes : [];
+
         $this->merge([
+            'themes' => PoemThemes::normalize($themes),
             'is_original' => $this->boolean('is_original'),
             'slug' => filled($this->input('slug')) ? $this->input('slug') : null,
         ]);
@@ -52,6 +59,7 @@ class PoemRequest extends FormRequest
             'title' => 'վերնագիր',
             'slug' => 'URL (slug)',
             'content' => 'տեքստ',
+            'themes' => 'թեմաներ',
             'meta_title' => 'SEO վերնագիր',
             'meta_description' => 'SEO նկարագրություն',
         ];

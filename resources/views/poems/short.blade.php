@@ -56,6 +56,7 @@
             'url' => $seoCanonical,
             'author' => ['@type' => 'Person', 'name' => 'Պարույր Սևակ'],
             'text' => $poem->excerpt(400),
+            'keywords' => implode(', ', $poem->themeLabels()),
             'dateModified' => $poem->updated_at?->toAtomString(),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
     </script>
@@ -77,6 +78,9 @@
     <main class="mx-auto max-w-2xl px-5 py-10">
         <h1 class="text-2xl font-bold">{{ $poem->title }}</h1>
         <p class="mt-1 text-sm text-stone-400">Պարույր Սևակ</p>
+        @if ($poem->themeLabels() !== [])
+            <p class="mt-1 text-xs text-stone-500">{{ implode(' · ', $poem->themeLabels()) }}</p>
+        @endif
         @if ($poem->hasAudio())
             <audio controls controlsList="nodownload noremoteplayback" disablepictureinpicture src="{{ $poem->audioUrl() }}" class="mt-4 w-full"></audio>
         @endif

@@ -79,6 +79,46 @@
 }
 
 /* ------------------------------------------------------------------ */
+/* Favourites                                                         */
+/* ------------------------------------------------------------------ */
+
+@keyframes favorite-pop {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.28);
+    }
+}
+
+@keyframes favorite-pop-card {
+    0%,
+    100% {
+        transform: translateY(-50%) scale(1);
+    }
+    45% {
+        transform: translateY(-50%) scale(1.28);
+    }
+}
+
+.favorite-pop {
+    animation: favorite-pop 0.28s ease;
+}
+
+/* The heart on a catalogue card is centred with translateY(-50%); the pop
+   keeps that offset instead of jumping to the middle of the row. */
+[data-card] .favorite-pop {
+    animation-name: favorite-pop-card;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .favorite-pop {
+        animation: none;
+    }
+}
+
+/* ------------------------------------------------------------------ */
 /* Phone gestures                                                     */
 /* ------------------------------------------------------------------ */
 

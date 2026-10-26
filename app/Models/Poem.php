@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Support\PoemText;
+use App\Support\PoemThemes;
 use Database\Factories\PoemFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +27,7 @@ class Poem extends Model
         'title',
         'slug',
         'content',
+        'themes',
         'audio_path',
         'is_original',
         'meta_title',
@@ -39,6 +42,7 @@ class Poem extends Model
     protected function casts(): array
     {
         return [
+            'themes' => 'array',
             'is_original' => 'boolean',
             'plays_count' => 'integer',
         ];
@@ -55,6 +59,54 @@ class Poem extends Model
                 $poem->slug = 'poem-'.Str::lower(Str::random(8));
             }
         });
+
+        // A new poem always starts with at least one theme; editors can still
+        // change or clear it later (the saving hook above leaves them alone).
+        static::creating(function (Poem $poem): void {
+            if (blank($poem->themes)) {
+                $poem->themes = PoemThemes::forTitle((string) $poem->title);
+            }
+        });
+    }
+
+    /**
+     * Theme keys of the poem, in the canonical order.
+     *
+     * @return list<string>
+     */
+    public function themeKeys(): array
+    {
+        return PoemThemes::normalize((array) ($this->themes ?? []));
+    }
+
+    /**
+     * Armenian labels of the poem's themes.
+     *
+     * @return list<string>
+     */
+    public function themeLabels(): array
+    {
+        return PoemThemes::labelsFor($this->themeKeys());
+    }
+
+    public function hasTheme(string $theme): bool
+    {
+        return in_array($theme, $this->themeKeys(), true);
+    }
+
+    /**
+     * Filter the catalogue by a single theme key.
+     *
+     * @param  Builder<Poem>  $query
+     * @return Builder<Poem>
+     */
+    public function scopeWithTheme(Builder $query, string $theme): Builder
+    {
+        if (! array_key_exists($theme, PoemThemes::LABELS)) {
+            return $query;
+        }
+
+        return $query->where('themes', 'like', '%"'.$theme.'"%');
     }
 
     /**

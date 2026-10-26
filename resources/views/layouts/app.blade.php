@@ -42,20 +42,39 @@
             </span>
         </a>
 
-        {{-- Search lives in a modal: one icon, no extra page (search-modal.js). --}}
-        <button
-            type="button"
-            data-search-open
-            class="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200/60 hover:text-stone-900"
-            aria-label="Փնտրել"
-            title="Փնտրել"
-        >
-            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-3.6-3.6" />
-            </svg>
-        </button>
+        {{-- Favourites and search share the right side of the bar. On a phone
+             the heart stays an icon with a counter; the label appears from the
+             small breakpoint up. --}}
+        <div class="ml-auto flex shrink-0 items-center gap-0.5">
+            <a href="{{ route('favorites.index') }}"
+               class="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-stone-500 transition hover:bg-stone-200/60 hover:text-stone-900 sm:px-3 {{ request()->routeIs('favorites.index') ? 'bg-stone-200/60 text-stone-900' : '' }}"
+               aria-label="Իմ ընտրանին"
+               title="Իմ ընտրանին"
+               @if (request()->routeIs('favorites.index')) aria-current="page" @endif>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+                </svg>
+                <span class="hidden text-sm font-medium sm:inline">Իմ ընտրանին</span>
+                <span data-favorites-count
+                      class="hidden min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-semibold leading-none text-white">0</span>
+            </a>
+
+            {{-- Search lives in a modal: one icon, no extra page (search-modal.js). --}}
+            <button
+                type="button"
+                data-search-open
+                class="grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200/60 hover:text-stone-900"
+                aria-label="Փնտրել"
+                title="Փնտրել"
+            >
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3.6-3.6" />
+                </svg>
+            </button>
+        </div>
     </div>
 </header>
 
@@ -87,9 +106,7 @@
     @yield('content')
 </main>
 
-<footer class="mx-auto max-w-3xl px-4 pb-10 pt-4 text-center text-xs text-stone-400">
-    © {{ date('Y') }} {{ config('app.name') }} · Նվիրված Պարույր Սևակին
-</footer>
+@include('partials.footer')
 
 @stack('scripts')
 </body>

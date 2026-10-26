@@ -6,6 +6,7 @@ import PlayerOnboarding from './PlayerOnboarding.vue';
 import PlayerPrefs from './PlayerPrefs.vue';
 import SearchPanel from './SearchPanel.vue';
 import SevakSilhouette from './SevakSilhouette.vue';
+import { isFavorite, toggleFavoriteItem } from '../favorites';
 import { useAudioPlayer } from '../composables/useAudioPlayer';
 import { useKaraoke } from '../composables/useKaraoke';
 import { usePlayerPrefs } from '../composables/usePlayerPrefs';
@@ -30,6 +31,7 @@ const poem = ref({ ...source });
 const state = ref('idle');
 const message = ref('');
 const shareNotice = ref('');
+const favorite = ref(isFavorite(source.slug));
 
 const audioUrl = ref(source.audioUrl ?? null);
 const linesData = ref(source.lines ?? []);
@@ -482,6 +484,23 @@ async function share() {
     }, 2000);
 }
 
+/** The heart in the top bar: the same list the catalogue uses. */
+function toggleFavorite() {
+    favorite.value = toggleFavoriteItem({
+        slug: poem.value.slug,
+        title: poem.value.title,
+        url: poem.value.canonical || window.location.href,
+        excerpt: (poem.value.content || '').slice(0, 90),
+    });
+}
+
+function onFavoritesChanged() {
+    favorite.value = isFavorite(poem.value.slug);
+}
+
+// Another poem in the same document: the heart follows it.
+watch(() => poem.value.slug, onFavoritesChanged);
+
 /**
  * A search result replaces the poem inside this document, exactly like a swipe:
  * the player keeps the browser's activation, so the recording keeps playing.
@@ -574,6 +593,7 @@ watch(playing, (isPlaying) => {
 onMounted(() => {
     window.addEventListener('keydown', onKeydown);
     window.addEventListener('popstate', onPopState);
+    window.addEventListener('sevak:favorites-changed', onFavoritesChanged);
 
     if (audioUrl.value) {
         state.value = 'loading';
@@ -595,6 +615,7 @@ onBeforeUnmount(() => {
     window.clearTimeout(loadWatchdog);
     window.removeEventListener('keydown', onKeydown);
     window.removeEventListener('popstate', onPopState);
+    window.removeEventListener('sevak:favorites-changed', onFavoritesChanged);
 });
 </script>
 
@@ -628,9 +649,29 @@ onBeforeUnmount(() => {
                 <p class="text-[10px] uppercase tracking-widest text-white/35">
                     {{ poem.author }}<template v-if="playsLabel"> · ▶ {{ playsLabel }}</template>
                 </p>
+                <p v-if="poem.themeLabels && poem.themeLabels.length" class="mt-0.5 truncate text-[9px] text-amber-200/50">
+                    {{ poem.themeLabels.join(' · ') }}
+                </p>
             </div>
 
             <div class="flex shrink-0 items-center gap-1.5">
+                <button
+                    type="button"
+                    class="grid h-9 w-9 place-items-center rounded-full border transition"
+                    :class="favorite
+                        ? 'border-rose-400/30 bg-rose-500/10 text-rose-300'
+                        : 'border-white/10 bg-white/5 text-white/70'"
+                    :aria-pressed="favorite ? 'true' : 'false'"
+                    :aria-label="favorite ? 'Հեռացնել իմ ընտրանուց' : 'Ավելացնել իմ ընտրանուն'"
+                    :title="favorite ? 'Հեռացնել իմ ընտրանուց' : 'Իմ ընտրանին'"
+                    @click="toggleFavorite"
+                >
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="favorite ? 'currentColor' : 'none'"
+                         stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+                    </svg>
+                </button>
+
                 <button
                     type="button"
                     class="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5"

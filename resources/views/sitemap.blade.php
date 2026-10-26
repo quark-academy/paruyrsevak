@@ -4,6 +4,11 @@
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
+    <url>
+        <loc>{{ \App\Support\Seo::canonical('terms') }}</loc>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
+    </url>
     @foreach ($poems as $poem)
         <url>
             <loc>{{ \App\Support\Seo::forPoem($poem) }}</loc>

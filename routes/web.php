@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\DiagnosticsController;
+use App\Http\Controllers\FavoritesController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PoemAudioStreamController;
 use App\Http\Controllers\PoemController;
@@ -27,6 +29,11 @@ if ($basePath !== '') {
 
 Route::get('/poems', [PoemController::class, 'index'])->name('poems.index');
 Route::get('/poems/{poem}', [PoemController::class, 'show'])->name('poems.show');
+
+// The visitor's own selection (localStorage) and the terms/data page. They sit
+// before the short "/{slug}" catch-all so their names are never poem slugs.
+Route::get('/favorites', [FavoritesController::class, 'index'])->name('favorites.index');
+Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
 
 // Recordings: signed + expiring, the files themselves are outside the web root.
 Route::get('/audio/{poem}', PoemAudioStreamController::class)

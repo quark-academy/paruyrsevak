@@ -1,4 +1,8 @@
-@php($p = $poem ?? new App\Models\Poem())
+@php
+    $p = $poem ?? new App\Models\Poem();
+    $selectedThemes = old('themes', $p->themes ?? []);
+    $selectedThemes = is_array($selectedThemes) ? $selectedThemes : [];
+@endphp
 
 <div class="grid gap-4 lg:grid-cols-3">
     <div class="lg:col-span-2 space-y-4">
@@ -35,6 +39,21 @@
                 <span>Արխիվային (օրիգինալ) ձայն</span>
             </label>
             <p class="text-[11px] text-stone-500">Անջատ դեպքում օգտագործվում է ԱԻ գեներացված ձայնը։</p>
+
+            <div>
+                <span class="mb-1 block text-xs font-medium text-stone-600">Թեմաներ</span>
+                <input type="hidden" name="themes[]" value="">
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach (\App\Support\PoemThemes::LABELS as $themeKey => $themeLabel)
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="checkbox" name="themes[]" value="{{ $themeKey }}" class="rounded border-stone-300"
+                                   @checked(in_array($themeKey, $selectedThemes, true))>
+                            <span>{{ $themeLabel }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-1 text-[11px] text-stone-500">Ընտրիր մեկ կամ մի քանի թեմա։</p>
+            </div>
 
             <div>
                 <label for="meta_title" class="mb-1 block text-xs font-medium text-stone-600">SEO վերնագիր</label>

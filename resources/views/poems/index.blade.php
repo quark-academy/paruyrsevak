@@ -9,11 +9,12 @@
         $chip = 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium transition';
         $chipIdle = 'border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-900';
         $chipActive = 'border-stone-900 bg-stone-900 text-amber-200';
-        $chipUrl = function (array $params) use ($term, $source, $sort): string {
+        $chipUrl = function (array $params) use ($term, $source, $sort, $theme): string {
             $query = array_filter([
                 'q' => $term,
                 'source' => $params['source'] ?? $source,
                 'sort' => $params['sort'] ?? $sort,
+                'theme' => $params['theme'] ?? $theme,
             ], fn ($value) => filled($value));
 
             return route('poems.index', $query);
@@ -112,6 +113,20 @@
             <a href="{{ $chipUrl(['source' => 'ai']) }}" class="{{ $chip }} {{ $source === 'ai' ? $chipActive : $chipIdle }}">AI</a>
             <a href="{{ $chipUrl(['sort' => 'new']) }}" class="{{ $chip }} {{ $sort === 'new' ? $chipActive : $chipIdle }}">Նորերը</a>
             <a href="{{ $chipUrl(['sort' => 'popular']) }}" class="{{ $chip }} {{ $sort === 'popular' ? $chipActive : $chipIdle }}">Ամենալսվածը</a>
+        </div>
+
+        {{-- Themes: one more row of chips, so a mood can be chosen without
+             leaving the catalogue. --}}
+        <div class="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+            <span class="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-wide text-stone-400">Թեմա</span>
+            <a href="{{ $chipUrl(['theme' => '']) }}" class="{{ $chip }} {{ $theme === '' ? $chipActive : $chipIdle }}">Բոլորը</a>
+            @foreach ($themes as $themeKey => $themeLabel)
+                <a href="{{ $chipUrl(['theme' => $themeKey]) }}"
+                   class="{{ $chip }} {{ $theme === $themeKey ? $chipActive : $chipIdle }}"
+                   @if ($theme === $themeKey) aria-current="page" @endif>
+                    {{ $themeLabel }}
+                </a>
+            @endforeach
         </div>
 
         @if ($poems->isEmpty())
