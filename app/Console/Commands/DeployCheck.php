@@ -5,7 +5,10 @@ namespace App\Console\Commands;
 use App\Support\Seo;
 use App\Support\UrlConfig;
 use Illuminate\Console\Command;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * One command that answers "why does the deployed site load without styles?".
@@ -34,6 +37,7 @@ class DeployCheck extends Command
         $this->checkApplication();
         $urls = $this->checkUrls();
         $this->checkAssets($urls['asset']);
+        $this->checkRoutes();
         $this->checkCrawlers($urls['canonical']);
 
         $this->newLine();
@@ -186,6 +190,56 @@ class DeployCheck extends Command
         if ($assetUrl !== '') {
             $probe = rtrim($assetUrl, '/').'/'.$this->firstAsset($manifest);
             $this->line(sprintf('  %s %-20s %s', '·', 'first asset', $probe));
+        }
+    }
+
+    /**
+     * What actually answers the home page.
+     *
+     * A stale route cache — or a catch-all written as "/{poem?}" — can hand "/"
+     * to the player, which then renders an empty screen. The route table is
+     * the first place to look when the site loads but shows the wrong page.
+     */
+    protected function checkRoutes(): void
+    {
+        $this->group('Routes');
+
+        $cached = app()->routesAreCached();
+        $file = base_path('bootstrap/cache/routes-v7.php');
+        $newest = max(array_map(
+            static fn (string $path): int => (int) filemtime($path),
+            array_merge(
+                [base_path('routes/web.php'), base_path('routes/short.php'), base_path('bootstrap/app.php')],
+                glob(base_path('routes').'/*.php') ?: [],
+            ),
+        ));
+
+        if ($cached && File::exists($file) && filemtime($file) < $newest) {
+            $this->reportFail(
+                'route cache',
+                'older than routes/*.php',
+                'Run: php artisan route:clear && php artisan route:cache',
+            );
+        } else {
+            $this->reportOk('route cache', $cached ? 'cached' : 'not cached');
+        }
+
+        try {
+            $route = app('router')->getRoutes()->match(Request::create('/'));
+            $name = (string) $route->getName();
+            $action = $route->getActionName();
+
+            if (str_contains($action, 'PoemShortController') || str_contains($action, 'PoemPlayerPayload')) {
+                $this->reportFail(
+                    'home page',
+                    $name.' ('.$route->uri().')',
+                    'The player answers "/". A catch-all like "/{poem?}" or a stale route cache does this: clear the cache and check routes/short.php.',
+                );
+            } else {
+                $this->reportOk('home page', $name.' → '.Str::afterLast($action, '\\'));
+            }
+        } catch (Throwable $e) {
+            $this->reportFail('home page', 'no route matches "/"', 'Run: php artisan route:list --path=/');
         }
     }
 

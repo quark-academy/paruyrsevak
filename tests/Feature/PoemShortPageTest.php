@@ -122,4 +122,30 @@ class PoemShortPageTest extends TestCase
             ->assertOk()
             ->assertSee('<link rel="canonical" href="https://subdomain.domain.am/shared-canonical"', false);
     }
+
+    public function test_the_player_never_renders_a_poem_that_does_not_exist(): void
+    {
+        // A catch-all written as "/{poem?}" (or a stale route cache) hands the
+        // controller a fresh model. The dark, empty player is not an answer:
+        // the site root shows the catalogue, any other path is simply missing.
+        $controller = app(\App\Http\Controllers\PoemShortController::class);
+        $payload = app(\App\Services\PoemPlayerPayload::class);
+
+        $root = $controller(new Poem, $payload, \Illuminate\Http\Request::create('/'));
+        $this->assertInstanceOf(\Illuminate\View\View::class, $root);
+        $this->assertSame('poems.index', $root->name());
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+        $controller(new Poem, $payload, \Illuminate\Http\Request::create('/no-such-poem'));
+    }
+
+    public function test_the_home_page_still_lists_the_catalogue(): void
+    {
+        Poem::factory()->create(['title' => 'Ցանկի գործ', 'slug' => 'catalogue-item']);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('data-card', false)
+            ->assertDontSee('poem-shorts', false);
+    }
 }
