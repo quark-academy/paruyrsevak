@@ -3,12 +3,14 @@
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\ForceHttpsUrls;
 use App\Http\Middleware\NormalizeBasePath;
+use App\Support\UrlConfig;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Route;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -50,3 +52,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+/*
+| A custom domain is often typed the way it is written ("պոեզիա.հայ"), while a
+| URL may only carry punycode. The rewrite has to happen right after the config
+| is loaded: the console kernel builds a request out of APP_URL before any
+| provider is registered, and Symfony refuses a Unicode host outright.
+*/
+$app->afterBootstrapping(
+    LoadConfiguration::class,
+    static fn () => UrlConfig::normalizeConfiguredUrls(),
+);
+
+return $app;

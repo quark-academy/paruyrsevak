@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Support\UrlConfig;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -37,6 +38,12 @@ class NormalizeBasePath
         if ($basePath === '') {
             return $next($request);
         }
+
+        // The folder that holds the front controller is also the folder the
+        // assets are served from: give ASSET_URL that prefix when the
+        // deployment did not configure it (a missing prefix is exactly what
+        // makes a page load without any styles).
+        UrlConfig::deriveAssetUrl($basePath);
 
         $request->server->set('SCRIPT_NAME', $basePath.'/index.php');
         $request->server->set('PHP_SELF', $basePath.'/index.php');
