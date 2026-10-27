@@ -4,13 +4,13 @@ namespace App\Models;
 
 use App\Support\PoemText;
 use App\Support\PoemThemes;
+use App\Support\SignedUrl;
 use Database\Factories\PoemFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class Poem extends Model
@@ -231,7 +231,7 @@ class Poem extends Model
             return null;
         }
 
-        return URL::temporarySignedRoute(
+        return SignedUrl::temporary(
             'poems.audio',
             now()->addSeconds(max(60, (int) config('poems.audio.url_ttl', 21600))),
             ['poem' => $this->getRouteKey()] + $this->audioSignatureParams(),

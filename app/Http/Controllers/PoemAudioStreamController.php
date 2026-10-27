@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Poem;
+use App\Support\SignedUrl;
+use App\Support\UrlConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -34,7 +36,7 @@ class PoemAudioStreamController extends Controller
 
     public function __invoke(Request $request, Poem $poem): BinaryFileResponse
     {
-        abort_unless($request->hasValidSignature(), 403, 'Ձայնի հղումը ժամկետանց է կամ սխալ է։');
+        abort_unless(SignedUrl::isValid($request), 403, 'Ձայնի հղումը ժամկետանց է կամ սխալ է։');
 
         $this->guardVisitor($request);
 
@@ -45,9 +47,16 @@ class PoemAudioStreamController extends Controller
         return response()->file($path, [
             'Content-Type' => $this->mimeType($path),
             'Content-Disposition' => 'inline; filename="'.(Str::slug((string) $poem->title) ?: 'poem').'.mp3"',
-            'Cache-Control' => 'private, max-age=600',
+            // A CDN in front of the site caches .mp3 by its own rules; the
+            // recording belongs to the visitor whose signature it carries.
+            'CDN-Cache-Control' => 'no-store',
             'X-Robots-Tag' => 'noindex, nofollow, noarchive',
-        ]);
+        ])
+            // Symfony marks a file response public by default and overrides
+            // any Cache-Control header given above; the browser may keep the
+            // stream for seeking, a shared cache never does.
+            ->setPrivate()
+            ->setMaxAge(600);
     }
 
     /**
@@ -78,15 +87,55 @@ class PoemAudioStreamController extends Controller
             trim((string) $request->headers->get('Referer')),
         ], static fn (string $origin): bool => $origin !== '' && strcasecmp($origin, 'null') !== 0);
 
+        $allowed = $this->allowedHosts($request);
+
         // No Origin/Referer at all: the signature is the only guard, which is
         // fine — the link still has to be valid and expires.
         foreach ($origins as $origin) {
+            $host = parse_url($origin, PHP_URL_HOST);
+
+            // A browser may send a Unicode Referer for an IDN domain while the
+            // configured hosts are punycode: compare the ASCII form of both.
             abort_unless(
-                parse_url($origin, PHP_URL_HOST) === $request->getHost(),
+                is_string($host) && in_array(UrlConfig::asciiHost(strtolower($host)), $allowed, true),
                 403,
                 'Ձայնը հասանելի է միայն կայքի ներսից։',
             );
         }
+    }
+
+    /**
+     * Hosts a recording may be requested from.
+     *
+     * Behind a Cloudflare Worker the visitor's Origin/Referer names the public
+     * domain while the origin sees its own host, so both count as the same
+     * site: the request host, the configured APP_URL host and the canonical
+     * host. X-Forwarded-Host is honoured too, when the proxy sends it.
+     *
+     * @return list<string>
+     */
+    protected function allowedHosts(Request $request): array
+    {
+        $hosts = [UrlConfig::asciiHost(strtolower($request->getHost()))];
+
+        foreach (['app.url', 'poems.canonical_base'] as $key) {
+            $host = parse_url((string) config($key), PHP_URL_HOST);
+
+            if (is_string($host) && $host !== '') {
+                $hosts[] = UrlConfig::asciiHost(strtolower($host));
+            }
+        }
+
+        foreach (['X-Forwarded-Host', 'X-Original-Host'] as $header) {
+            $host = trim((string) $request->headers->get($header));
+
+            if ($host !== '') {
+                // A list may name several proxies; the first is the visitor's.
+                $hosts[] = UrlConfig::asciiHost(strtolower(trim(explode(',', $host)[0])));
+            }
+        }
+
+        return array_values(array_unique(array_map('strtolower', array_filter($hosts))));
     }
 
     /**

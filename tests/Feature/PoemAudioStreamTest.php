@@ -174,6 +174,23 @@ class PoemAudioStreamTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_a_shared_cache_may_not_store_the_recording(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        // Cloudflare caches .mp3 by extension: the stream must stay private,
+        // or one visitor's signed copy would be served to everybody.
+        $this->get((string) $poem->audioUrl())
+            ->assertOk()
+            ->assertHeader('CDN-Cache-Control', 'no-store')
+            ->assertHeaderMissing('Surrogate-Control');
+
+        $cacheControl = (string) $this->get((string) $poem->audioUrl())->headers->get('Cache-Control');
+
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringNotContainsString('public', $cacheControl);
+    }
+
     public function test_the_public_disk_never_serves_a_recording(): void
     {
         $poem = $this->poemWithAudio();
@@ -208,5 +225,110 @@ class PoemAudioStreamTest extends TestCase
         $response = $this->get((string) $poem->fresh()->audioUrl())->assertOk();
 
         $this->assertSame('LEGACY-BYTES', $this->contentOf($response));
+    }
+
+    /**
+     * A request the Cloudflare Worker hands to the origin: the public host is
+     * replaced by lab.quark.am and the "/sevak" folder is put in front of the
+     * path, while the signed URL was built for the public domain.
+     */
+    private function viaWorker(string $url, array $headers = []): TestResponse
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $query = (string) parse_url($url, PHP_URL_QUERY);
+
+        // What Timeweb's PHP-FPM reports for a project in public_html/sevak.
+        return $this->withServerVariables([
+            'HTTP_HOST' => 'lab.quark.am',
+            'SCRIPT_NAME' => '/sevak/index.php',
+            'PHP_SELF' => '/sevak/index.php',
+            'SCRIPT_FILENAME' => public_path('index.php'),
+        ])->get('/sevak'.$path.'?'.$query, $headers);
+    }
+
+    public function test_a_recording_plays_behind_a_worker_that_rewrites_the_host(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        config()->set('app.url', 'https://xn--y9ahdu6dl.xn--y9a3aq');
+        config()->set('poems.base_path', '/sevak');
+        URL::forceRootUrl('https://xn--y9ahdu6dl.xn--y9a3aq');
+        URL::forceScheme('https');
+
+        $url = (string) $poem->fresh()->audioUrl();
+
+        $this->assertStringStartsWith('https://xn--y9ahdu6dl.xn--y9a3aq/', $url);
+        $this->assertStringNotContainsString('/sevak', $url);
+
+        // The origin sees its own host and a prefixed path; the signature was
+        // made for the public address.
+        $response = $this->viaWorker($url, [
+            'Referer' => 'https://xn--y9ahdu6dl.xn--y9a3aq/'.$poem->slug,
+        ])->assertOk();
+
+        $this->assertSame('MP3-BYTES', $this->contentOf($response));
+    }
+
+    public function test_the_worker_may_name_the_public_host_in_a_header(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        config()->set('app.url', 'https://xn--y9ahdu6dl.xn--y9a3aq');
+        config()->set('poems.base_path', '/sevak');
+        URL::forceRootUrl('https://xn--y9ahdu6dl.xn--y9a3aq');
+        URL::forceScheme('https');
+
+        $this->viaWorker((string) $poem->fresh()->audioUrl(), [
+            'X-Forwarded-Host' => 'xn--y9ahdu6dl.xn--y9a3aq',
+            'Referer' => 'https://xn--y9ahdu6dl.xn--y9a3aq/'.$poem->slug,
+        ])->assertOk();
+    }
+
+    public function test_a_worker_rewrite_does_not_open_the_door_to_other_sites(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        config()->set('app.url', 'https://xn--y9ahdu6dl.xn--y9a3aq');
+        config()->set('poems.base_path', '/sevak');
+        URL::forceRootUrl('https://xn--y9ahdu6dl.xn--y9a3aq');
+        URL::forceScheme('https');
+
+        // The signature is fine, but the page that asks is not this site.
+        $this->viaWorker((string) $poem->fresh()->audioUrl(), [
+            'Referer' => 'https://evil.example/'.$poem->slug,
+        ])->assertForbidden();
+    }
+
+    public function test_a_tampered_url_is_still_refused_behind_the_worker(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        config()->set('app.url', 'https://xn--y9ahdu6dl.xn--y9a3aq');
+        config()->set('poems.base_path', '/sevak');
+        URL::forceRootUrl('https://xn--y9ahdu6dl.xn--y9a3aq');
+        URL::forceScheme('https');
+
+        $url = (string) $poem->fresh()->audioUrl();
+        $tampered = preg_replace('/signature=[0-9a-f]+/', 'signature='.str_repeat('0', 64), $url);
+
+        $this->viaWorker((string) $tampered)->assertForbidden();
+    }
+
+    public function test_an_expired_url_is_refused_behind_the_worker(): void
+    {
+        $poem = $this->poemWithAudio();
+
+        config()->set('app.url', 'https://xn--y9ahdu6dl.xn--y9a3aq');
+        config()->set('poems.base_path', '/sevak');
+        URL::forceRootUrl('https://xn--y9ahdu6dl.xn--y9a3aq');
+        URL::forceScheme('https');
+
+        $expired = URL::temporarySignedRoute(
+            'poems.audio',
+            now()->subMinute(),
+            ['poem' => $poem->slug, 'u' => Poem::visitorHash()],
+        );
+
+        $this->viaWorker($expired)->assertForbidden();
     }
 }
