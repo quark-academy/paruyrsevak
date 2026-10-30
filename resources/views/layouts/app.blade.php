@@ -11,6 +11,8 @@
 
     @stack('meta')
 
+    @include('partials.analytics')
+
     {{-- The author's monochrome mark is the site icon as well. --}}
     <link rel="icon" type="image/png" href="{{ asset('images/sevak-logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/sevak-logo.png') }}">

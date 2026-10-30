@@ -6,6 +6,7 @@ import PlayerOnboarding from './PlayerOnboarding.vue';
 import PlayerPrefs from './PlayerPrefs.vue';
 import SearchPanel from './SearchPanel.vue';
 import SevakSilhouette from './SevakSilhouette.vue';
+import { trackPageView } from '../analytics';
 import { isFavorite, toggleFavoriteItem } from '../favorites';
 import { useAudioPlayer } from '../composables/useAudioPlayer';
 import { useKaraoke } from '../composables/useKaraoke';
@@ -370,6 +371,10 @@ async function navigate(target, { push = true } = {}) {
                 data.canonical,
             );
         }
+
+        // The document (and the gtag tag) survives the swap, so the new poem
+        // is a page view we have to report ourselves.
+        trackPageView(window.location.href);
 
         if (audioUrl.value) {
             state.value = 'loading';

@@ -15,6 +15,9 @@
          them as well as the canonical URL. --}}
     @include('partials.seo', ['seo' => $seo ?? Seo::poemPage($poem)])
 
+    {{-- The player has its own document, so it includes the tag itself. --}}
+    @include('partials.analytics')
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=noto-sans-armenian:400,500,600,700" rel="stylesheet">
 
