@@ -94,8 +94,10 @@ function finishIntro() {
     markIntroSeen();
 
     // The press on «Սկսենք» is a real user gesture, and that is all a browser
-    // asks for: the recording may start with sound right away.
-    if (state.value === 'ready') {
+    // asks for: the recording may start with sound right away. iOS starts
+    // loading the media only on such a gesture, so the recording may still be
+    // "loading" here — that is exactly when the attempt is needed.
+    if (state.value === 'ready' || state.value === 'loading') {
         attemptAutoplay();
     }
 }
@@ -125,7 +127,18 @@ const autoplayBlocked = computed(
  * every following poem starts by itself again, because the document keeps the
  * activation it was given.
  */
-const needsStart = computed(() => state.value === 'ready' && !playedOnce.value && !playing.value);
+const needsStart = computed(
+    () => (state.value === 'ready' || state.value === 'loading') && !playedOnce.value && !playing.value,
+);
+
+/**
+ * Whether the transport has something to play. A recording that is still
+ * loading keeps the ▶ button enabled on purpose: iOS does not fetch media
+ * until the visitor asks for it, so a tap is what starts the download.
+ */
+const canPlay = computed(
+    () => Boolean(audioUrl.value) && state.value !== 'generating' && state.value !== 'missing',
+);
 
 /**
  * A recording that fails to load must not leave "loading" on screen forever:
@@ -315,6 +328,10 @@ function reload() {
     if (audioUrl.value) {
         state.value = 'loading';
         load(audioUrl.value);
+
+        // The retry always comes from a tap: on iOS that gesture is what lets
+        // the recording load and start at all.
+        attemptAutoplay();
 
         return;
     }
@@ -592,6 +609,17 @@ watch(audioUrl, () => {
  */
 function onToggle() {
     userPaused.value = playing.value;
+
+    // Nothing is buffered yet (iOS media loads only on a gesture): restart the
+    // source and play right away instead of toggling silence.
+    if (!ready.value && audioUrl.value) {
+        state.value = 'loading';
+        load(audioUrl.value);
+        play();
+
+        return;
+    }
+
     toggle();
 }
 
@@ -768,6 +796,14 @@ onBeforeUnmount(() => {
                     >
                         Ստեղծել AI ձայնը
                     </button>
+                    <button
+                        v-else-if="audioUrl"
+                        type="button"
+                        class="mt-2 rounded-full border border-amber-300/40 px-4 py-1.5 text-xs font-medium text-amber-200"
+                        @click="reload"
+                    >
+                        Փորձել նորից
+                    </button>
                 </div>
             </div>
         </section>
@@ -785,7 +821,7 @@ onBeforeUnmount(() => {
                 :duration="duration"
                 :rate="rate"
                 :muted="muted"
-                :disabled="state !== 'ready'"
+                :disabled="!canPlay"
                 :attention="autoplayBlocked"
                 :has-prev="Boolean(poem.prev)"
                 :has-next="Boolean(poem.next) || shuffle"
